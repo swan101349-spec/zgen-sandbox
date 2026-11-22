@@ -219,6 +219,7 @@ function checkFit(s,name) {
     assert.equal(errors.length,0,'no uncaught runtime errors during artist regressions: '+errors.join(' | '));
     console.log('PASS: 12 drawer cycles, same URL, unchanged pixels, no runtime exceptions');
 
+
     const retainedPixel=await page.evaluate(()=>{
       const canvas=document.getElementById('reference');
       return Array.from(canvas.getContext('2d',{willReadFrequently:true}).getImageData(11,13,1,1).data);
@@ -226,5 +227,29 @@ function checkFit(s,name) {
     assert.deepEqual(retainedPixel,initialPixel,'reference pixel preserved through 5 resizes and fit modes');
     console.log('PASS: floating panel overlay, Fit Canvas/Fill Width, tracing pixel remains, no backing-canvas resize');
     if(errors.length)console.log('Page runtime warnings (not evaluated as an engine PASS): '+errors.slice(0,5).join(' | '));
+    // Persistent native brush favorites: save/recall through real data-brush
+    // selection and survive reload. No synthetic paint engine substitute.
+    await page.locator('#zshell-left .zshell-handle').click();
+    const favoriteToggle=page.locator('#zshell-left-panel .zshell-fav-toggle');
+    await favoriteToggle.click();
+    assert.equal(await favoriteToggle.getAttribute('aria-pressed'),'true',
+      'current 2B graphite saved as favorite');
+    assert.equal(await page.locator('#zshell-left-panel .zshell-fav-list button[data-brush=graphite]').count(),1,
+      'favorite is a real native data-brush selector');
+    await page.locator('#drawing-rail button[data-brush=ink]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().brush),'ink',
+      'native Indian Ink remains available');
+    await page.locator('#zshell-left .zshell-handle').click();
+    await page.locator('#zshell-left-panel .zshell-fav-list button[data-brush=graphite]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().brush),'graphite',
+      'favorite recalls real 2B engine brush');
+
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>!!window.__ZGEN_BETA_26?.state && !!window.__ZGEN_THREE_SHELL);
+    await page.locator('#zshell-left .zshell-handle').click();
+    assert.equal(await page.locator('#zshell-left-panel .zshell-fav-list button[data-brush=graphite]').count(),1,
+      'favorite survives page refresh via localStorage');
+    console.log('PASS: native favorite save, real Ink→Graphite recall, survives reload');
+
   } finally { await browser.close(); }
 })().catch(err=>{console.error(err.stack||err);process.exitCode=1;});

@@ -129,6 +129,64 @@
   }
   subhead(left.panel,'Watercolor & materials');left.panel.append(paint);
   subhead(left.panel,'Pencils, ink & tracing');left.panel.append(drawing);
+
+  // Favorites are a shell feature only. Clicking a favorite uses the real
+  // existing document-level data-brush handler, not a replacement painter.
+  const favoritesKey='zgen-brush-favorites-v1';
+  let favoriteIds=[];
+  try{
+    const stored=JSON.parse(localStorage.getItem(favoritesKey)||'[]');
+    if(Array.isArray(stored)){
+      favoriteIds=[...new Set(stored.filter(id=>typeof id==='string' && /^[a-z0-9_-]{1,40}$/.test(id)))].slice(0,24);
+    }
+  }catch{}
+  subhead(left.panel,'★ Favorite brushes');
+  const favoritesWrap=document.createElement('div');
+  favoritesWrap.className='zshell-favorites';
+  const starCurrent=document.createElement('button');
+  starCurrent.type='button';starCurrent.className='zshell-fav-toggle';
+  starCurrent.setAttribute('aria-label','Favorite the selected brush');
+  const favoritesList=document.createElement('div');
+  favoritesList.className='zshell-fav-list';
+  favoritesList.setAttribute('aria-label','Saved brush favorites');
+  favoritesWrap.append(starCurrent,favoritesList);
+  left.panel.append(favoritesWrap);
+  const brushName=id=>id==='graphite'?'2B Graphite':
+    id==='ink'?'Indian Ink':id.replace(/[-_]/g,' ').split(' ').map(
+      word=>word.charAt(0).toUpperCase()+word.slice(1)
+    ).join(' ');
+  function refreshFavorites(){
+    const active=window.__ZGEN_BETA_26?.state?.().brush||'round';
+    const saved=favoriteIds.includes(active);
+    starCurrent.textContent=(saved?'★ Saved: ':'☆ Save: ')+brushName(active);
+    starCurrent.setAttribute('aria-pressed',String(saved));
+    favoritesList.replaceChildren();
+    if(!favoriteIds.length){
+      const empty=document.createElement('small');
+      empty.textContent='Choose a brush, then tap ☆ to save it here.';
+      favoritesList.append(empty);
+    }
+    for(const id of favoriteIds){
+      const btn=document.createElement('button');
+      btn.type='button';btn.dataset.brush=id;btn.textContent='★ '+brushName(id);
+      btn.setAttribute('aria-label','Select favorite '+brushName(id));
+      favoritesList.append(btn);
+    }
+  }
+  starCurrent.addEventListener('click',()=>{
+    const active=window.__ZGEN_BETA_26?.state?.().brush||'round';
+    if(!/^[a-z0-9_-]{1,40}$/.test(active))return;
+    if(favoriteIds.includes(active))favoriteIds=favoriteIds.filter(id=>id!==active);
+    else favoriteIds=[...favoriteIds,active].slice(-24);
+    try{localStorage.setItem(favoritesKey,JSON.stringify(favoriteIds))}catch{}
+    refreshFavorites();
+  });
+  // The original click handler changes the real brush; refresh only afterward.
+  document.addEventListener('click',event=>{
+    if(event.target.closest('[data-brush]'))requestAnimationFrame(refreshFavorites);
+  });
+  left.handle.addEventListener('click',refreshFavorites);
+  refreshFavorites();
   subhead(right.panel,'Canvas operations');right.panel.append(canvasTools);
   subhead(right.panel,'STOP / GO · file controls');right.panel.append(topActions);
   const group=document.createElement('div');group.className='zshell-actions';
