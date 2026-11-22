@@ -168,6 +168,57 @@ function checkFit(s,name) {
     assert.ok(marks.xl>marks.xs*2,'XL graphite makes physically larger stroke: '+JSON.stringify(marks));
     console.log('PASS: contextual 3 slider modes, XS/XL real size and 2B graphite pixel coverage '+JSON.stringify(marks));
 
+    // Artist regression: real Undo/Redo and exported PNG after resizing.
+    // Do not equate visible buttons with working history or save behavior.
+    const countPaintRegion=async fractionY=>page.evaluate(fy=>{
+      const c=document.getElementById('paint');
+      const ctx=c.getContext('2d',{willReadFrequently:true});
+      const box=ctx.getImageData(230,Math.round(1280*fy)-110,260,220);
+      let count=0;
+      for(let i=3;i<box.data.length;i+=4)if(box.data[i]>4)count++;
+      return count;
+    },fractionY);
+    const beforeUndo=await countPaintRegion(.74);
+    await page.locator('#zshell-right .zshell-handle').click();
+    await page.locator('#canvas-rail button[data-act=undo]').click();
+    await page.waitForTimeout(150);
+    const afterUndo=await countPaintRegion(.74);
+    assert.ok(afterUndo<beforeUndo*.4,
+      'real Undo removes most of XL graphite pixels: '+JSON.stringify({beforeUndo,afterUndo}));
+    await page.locator('#zshell-right .zshell-handle').click();
+    await page.locator('#canvas-rail button[data-act=redo]').click();
+    await page.waitForTimeout(150);
+    const afterRedo=await countPaintRegion(.74);
+    assert.ok(afterRedo>beforeUndo*.65,
+      'real Redo restores XL graphite pixels: '+JSON.stringify({beforeUndo,afterRedo}));
+    console.log('PASS: real graphite Undo/Redo pixels '+JSON.stringify({beforeUndo,afterUndo,afterRedo}));
+
+    // Save with the original tool; inspect actual downloaded PNG bytes and dimensions.
+    await page.locator('#zshell-right .zshell-handle').click();
+    const downloadReady=page.waitForEvent('download',{timeout:12000});
+    await page.locator('#zshell-right-panel .actions button[data-act=export]').click();
+    const download=await downloadReady;
+    const pngBytes=fs.readFileSync(await download.path());
+    assert.deepEqual([...pngBytes.subarray(0,8)],[137,80,78,71,13,10,26,10],
+      'real PNG magic header');
+    assert.equal(pngBytes.readUInt32BE(16),720,'PNG export width');
+    assert.equal(pngBytes.readUInt32BE(20),1280,'PNG export height');
+    assert.ok(pngBytes.length>3000,'PNG export has substantial content');
+    console.log('PASS: original PNG download valid 720x1280, '+pngBytes.length+' bytes');
+
+    // Rapid toggles must never navigate away or erase the drawing.
+    const beforeToggles=await countPaintRegion(.74);
+    for(let i=0;i<12;i++){
+      const side=i%2?'#zshell-left':'#zshell-right';
+      await page.locator(side+' .zshell-handle').click();
+      await page.locator(side+' .zshell-close').click();
+    }
+    assert.ok(page.url().endsWith('/shell-v2.html'),'docking controls never navigate away');
+    const afterToggles=await countPaintRegion(.74);
+    assert.equal(afterToggles,beforeToggles,'panel toggling never changes art pixels');
+    assert.equal(errors.length,0,'no uncaught runtime errors during artist regressions: '+errors.join(' | '));
+    console.log('PASS: 12 drawer cycles, same URL, unchanged pixels, no runtime exceptions');
+
     const retainedPixel=await page.evaluate(()=>{
       const canvas=document.getElementById('reference');
       return Array.from(canvas.getContext('2d',{willReadFrequently:true}).getImageData(11,13,1,1).data);
