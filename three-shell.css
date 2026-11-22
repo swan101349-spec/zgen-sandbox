@@ -43,3 +43,84 @@
 #app .zshell button:focus-visible,#app .zshell a:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @media(min-width:700px){.zshell.left .zshell-panel,.zshell.right .zshell-panel{width:310px}.zshell.bottom .zshell-panel{left:5%;right:5%}}
 @media(max-height:450px){.zshell.left,.zshell.right{top:5%}.zshell-panel{max-height:80dvh}.zshell.left .zshell-handle,.zshell.right .zshell-handle{min-height:49px}.zshell.bottom .zshell-panel{bottom:42px;max-height:65dvh}}
+
+
+/* 22 Nov artist review: paper-first fit controls and compact half-pans. Layout only. */
+#app .viewport.zgen-paper-fill #board{
+  width:calc(100% - 8px)!important;
+  max-width:none!important;
+  min-width:0!important;
+}
+.zshell-viewbar{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
+  margin:1px 0 7px;
+}
+.zshell-viewbar button{
+  min-height:40px;padding:5px 4px;background:#263f4c;color:#fff4dd;
+  border:1px solid #b99c61;border-radius:7px;font:750 12px/1.15 system-ui;
+  touch-action:manipulation;
+}
+.zshell-viewbar button[aria-pressed="true"]{
+  background:#f1cd7e;color:#152632;border-color:#ffe3a5;
+}
+.zshell-panel{padding:7px!important;max-height:min(68dvh,450px)!important}
+.zshell.left .zshell-panel,.zshell.right .zshell-panel{
+  width:min(calc(100vw - 104px),258px)!important;
+}
+.zshell.bottom .zshell-panel{
+  left:3px!important;right:3px!important;
+  max-height:min(44dvh,300px)!important;
+}
+.zshell-title{gap:5px;font-size:13px;padding-bottom:4px;margin-bottom:5px}
+.zshell-close{min-width:36px;min-height:36px}
+.zshell-subtitle{font-size:11px;margin:6px 0 4px}
+#app .zshell-panel .rail{gap:5px!important;margin-bottom:5px!important}
+#app .zshell-panel .rail button:not(.rail-toggle){
+  height:46px!important;min-height:46px!important;max-height:46px!important;
+  font-size:17px!important;gap:0!important;padding:2px!important;
+}
+#app .zshell-panel .rail button span{font-size:9px!important}
+#app .zshell-panel .actions{gap:5px!important}
+#app .zshell-panel .actions button{
+  min-height:40px!important;font-size:12px!important;
+}
+#app .zshell-panel .shelf{margin:3px 0 5px!important}
+#app .zshell-panel .shelf button{min-height:40px!important;font-size:12px!important}
+.zshell-actions{gap:5px}
+.zshell-actions button,.zshell-actions a{
+  min-height:40px!important;font-size:12px!important;padding:5px 3px!important;
+}
+#app .drawer{
+  max-height:min(65dvh,470px)!important;padding:8px!important;
+  left:clamp(42px,9vw,72px)!important;
+  right:clamp(42px,9vw,72px)!important;
+}
+#app .drawer h2{font-size:16px!important}
+#app .drawer .close{min-width:40px!important;min-height:40px!important}
+#app .drawer .pigments{
+  grid-template-columns:repeat(auto-fill,minmax(35px,1fr))!important;
+  gap:4px!important;padding:3px!important;
+}
+#app .drawer .pigments button{
+  width:100%!important;max-width:40px!important;
+  min-height:35px!important;aspect-ratio:1!important;
+  border-radius:50%!important;justify-self:center!important;
+  box-shadow:0 1px 2px #0008!important;
+}
+#app .drawer .brush-grid,#app .drawer .file-grid{gap:5px!important}
+#app .drawer .brush-grid button,
+#app .drawer .file-grid button,
+#app .drawer .setting-grid button{
+  min-height:42px!important;padding:5px!important;font-size:12px!important;
+}
+#app .drawer .setting-grid{gap:5px!important}
+#app .drawer .setting-grid label{font-size:12px!important}
+#app .drawer .setting-grid input[type=range]{height:30px!important}
+@media(max-width:380px){
+  .zshell.left .zshell-panel,.zshell.right .zshell-panel{
+    width:min(calc(100vw - 99px),244px)!important;
+  }
+  #app .drawer .pigments{
+    grid-template-columns:repeat(auto-fill,minmax(32px,1fr))!important;
+  }
+}
