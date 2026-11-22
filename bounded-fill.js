@@ -128,7 +128,10 @@
       let edge=0;
       if(!seen[n-1]||!seen[n+1]||!seen[n-W]||!seen[n+W])edge=1;
       const grain=.58+.42*((noise>>>11)%997)/997;
-      const density=(.06+.35*strength)*grain*(edge?(1+.30*water):1);
+      // A wetter/softer edge fades inward, never across the graphite wall.
+      // Drier wash leaves a subtle capillary rim just inside the mask.
+      const edgeScale=edge?(1.16-.52*water):1;
+      const density=(.06+.35*strength)*grain*edgeScale;
       const alpha=clamp(density,0,.43);
       const da=patch[local+3]/255,combined=alpha+da*(1-alpha);
       if(combined<=0)continue;
