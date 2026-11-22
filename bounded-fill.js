@@ -4,6 +4,7 @@
  */
 (() => {
   'use strict';
+  function initialize(){
   const W=720,H=1280,PIX=W*H;
   const app=document.querySelector('#app');
   const stage=app?.querySelector('.viewport');
@@ -13,7 +14,7 @@
   const area=app?.querySelector('#canvasArea');
   const left=app?.querySelector('#zshell-left-panel');
   const bridge=window.__ZGEN_FILL_BRIDGE;
-  if(!stage||!paint||!reference||!board||!area||!left||!bridge)return;
+  if(!stage||!paint||!reference||!board||!area||!left||!bridge)return false;
   let active=false, pending=null, busy=false, wasMulti=false;
   const group=document.createElement('div');group.className='zgen-fill-group';
   const button=document.createElement('button');
@@ -24,7 +25,7 @@
   const note=document.createElement('small');
   note.textContent='Choose Fill, then tap INSIDE a closed outline. Open shapes are safely refused.';
   group.append(button,note);
-  left.insertBefore(group,left.querySelector('.zshell-favorites')?.parentElement?.nextSibling || null);
+  left.insertBefore(group,left.querySelector('.zshell-favorites') || null);
   function status(message){const e=document.querySelector('#status');if(e)e.textContent=message}
   function setActive(value){
     active=!!value;pending=null;wasMulti=false;
@@ -197,4 +198,14 @@
     makePatch,
     mapTap
   };
+  return true;
+  }
+  // The original packed renderer is imported asynchronously from a module
+  // in the HTML head. Wait for that real module, never replace its engine.
+  let frames=0;
+  function waitForRealPainter(){
+    if(initialize())return;
+    if(++frames<180)requestAnimationFrame(waitForRealPainter);
+  }
+  waitForRealPainter();
 })();
