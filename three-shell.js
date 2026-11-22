@@ -223,10 +223,10 @@
   // Artist's contextual adjustment dock. Directly drives the original engine's
   // already-wired 'data-setting' document input handler, without touching wet
   // simulation code or painting canvas dimensions/history.
-  const settings={size:22,water:68,pigment:78,opacity:96,lazy:0};
+  const settings={size:22,water:68,pigment:78,opacity:96,lazy:0,coverage:88,soft:55,strength:32};
   const settingsRange={
     size:[1,100],water:[0,100],pigment:[0,100],
-    opacity:[1,100],lazy:[0,70]
+    opacity:[1,100],lazy:[0,70],coverage:[0,100],soft:[0,100],strength:[0,100]
   };
   const sizePresets={XS:3,S:10,M:22,L:45,XL:80};
   const adjustButton=document.createElement('button');
@@ -260,6 +260,7 @@
     }
   }
   function contextualFields(){
+    if(window.__ZGEN_FILL?.active)return [['coverage','Coverage'],['soft','Soft edge'],['strength','Pigment strength']];
     return isDrawingBrush()
       ? [['size','Size'],['opacity','Mark strength'],['lazy','Lazy']]
       : [['size','Size'],['water','Water'],['pigment','Pigment']];
@@ -274,7 +275,7 @@
     const drawing=isDrawingBrush();
     adjustPanel.replaceChildren();
     const head=document.createElement('div');head.className='zshell-adjust-title';
-    const title=document.createElement('strong');title.textContent=drawing?'Pencil / ink settings':'Watercolor settings';
+    const title=document.createElement('strong');title.textContent=window.__ZGEN_FILL?.active?'Watercolor Fill settings':drawing?'Pencil / ink settings':'Watercolor settings';
     const close=document.createElement('button');close.type='button';close.textContent='×';
     close.className='zshell-adjust-close';close.setAttribute('aria-label','Close brush adjustments');
     close.addEventListener('click',()=>setAdjustOpen(false));
@@ -312,7 +313,7 @@
       });
       presets.append(button);
     }
-    adjustPanel.append(presets);
+    if(!window.__ZGEN_FILL?.active)adjustPanel.append(presets);
     const hint=document.createElement('p');hint.className='zshell-adjust-hint';
     hint.textContent='Changes apply to your next real brush or pencil mark.';
     adjustPanel.append(hint);
@@ -333,6 +334,7 @@
     adjustButton.setAttribute('aria-expanded',String(open));
   }
   adjustButton.addEventListener('click',()=>setAdjustOpen(adjustPanel.hidden));
+  document.addEventListener('zgen-fill-mode-change',()=>{if(!adjustPanel.hidden)rebuildAdjustPanel()});
   document.addEventListener('input',event=>{
     const key=event.target?.dataset?.setting;
     if(!(key in settings))return;
@@ -371,7 +373,8 @@
     get size(){return settings.size},
     get mode(){return isDrawingBrush()?'drawing':'watercolor'},
     get open(){return !adjustPanel.hidden},
-    close:()=>setAdjustOpen(false)
+    close:()=>setAdjustOpen(false),
+    get fillSettings(){return {coverage:settings.coverage,soft:settings.soft,strength:settings.strength}}
   };
 
   window.__ZGEN_THREE_SHELL={version:'2026-11-22-auto-fit',paintingModuleModified:false,closeAll,recalculatePaperFit,get viewMode(){return viewMode}};
