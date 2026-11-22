@@ -40,8 +40,9 @@ try{
  await page.locator('#zshell-left .zshell-handle').click();
  await page.locator('.zgen-fill-toggle').click();
  assert.equal(await page.locator('.zgen-fill-toggle').getAttribute('aria-pressed'),'true','Fill mode enabled');
- const result=await page.evaluate(({x,y})=>window.__ZGEN_FILL.applyAt(x,y),pt);
- assert.equal(result.ok,true,'one tap fills closed real reference');
+ // Actual Android-style touch events, not a direct internal method call.
+ await page.touchscreen.tap(pt.x,pt.y);
+ await page.waitForTimeout(100);
  const filled=await pixels();
  assert.ok(filled.center[3]>7 && filled.center[3]<120,
    'center has translucent watercolor, not opaque flood: '+JSON.stringify(filled.center));
@@ -59,8 +60,8 @@ try{
  });
  assert.equal(await page.evaluate(()=>window.__ZGEN_BRUSH_CONTROLS.fillSettings.strength),90,'real Fill strength setting wired');
  await page.locator('.zshell-adjust-close').click();
- const more=await page.evaluate(({x,y})=>window.__ZGEN_FILL.applyAt(x,y),pt);
- assert.equal(more.ok,true,'stronger watercolor covers same bounded region');
+ await page.touchscreen.tap(pt.x,pt.y);
+ await page.waitForTimeout(100);
  const stronger=await pixels();
  assert.ok(stronger.center[3]>filled.center[3]+9,'increasing strength deposits more transparent pigment');
  assert.deepEqual(stronger.outer,filled.outer,'outside still clean after stronger wash');
