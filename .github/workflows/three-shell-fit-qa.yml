@@ -1,0 +1,26 @@
+name: ZGen three-shell auto-fit QA
+on:
+  pull_request:
+    paths:
+      - 'three-shell.js'
+      - 'three-shell.css'
+      - 'tests/three-shell-fit-check.cjs'
+      - '.github/workflows/three-shell-fit-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-fit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate shell JS and fit contract without touching paint engine
+        run: |
+          node --check three-shell.js
+          node tests/three-shell-fit-check.cjs
