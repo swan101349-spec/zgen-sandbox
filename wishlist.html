@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101c28"><title>ZGenArtStudio Pro • Build Board</title>
+<style>
+:root{color-scheme:dark;--bg:#0a1721;--panel:#142635;--ink:#fff5de;--soft:#d7dfe0;--gold:#ffc861;--line:#57717f}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Roboto,Arial,sans-serif}
+header{position:sticky;top:0;z-index:2;background:#0d1e2bf5;border-bottom:2px solid var(--gold);padding:10px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+header strong{font-size:clamp(16px,3vw,22px);line-height:1.1}header a,.back{display:inline-flex;align-items:center;justify-content:center;background:#f9d68c;color:#0b1822;text-decoration:none;border-radius:9px;font-weight:800;padding:9px 14px;min-height:44px;white-space:nowrap}
+main{max-width:840px;margin:0 auto;padding:18px 15px 46px}
+h1{font-size:clamp(24px,5.8vw,34px);line-height:1.15;margin:4px 0 10px}h2{font-size:21px;margin:5px 0 15px}p{margin:8px 0 14px;color:var(--soft)}
+.kicker{font-weight:800;color:var(--gold);letter-spacing:.055em;text-transform:uppercase;font-size:13px}
+.hero,.section{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px;margin:14px 0}
+.hero{border-left:5px solid var(--gold)}
+.tally{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.tally div{border:1px solid #63808f;padding:12px;border-radius:10px;background:#0d1f2c}
+.tally b{display:block;color:var(--gold);font-size:18px}.tally small{font-size:14px;color:#f1f3ef}
+details{border:1px solid #557382;background:#10212f;border-radius:11px;margin:10px 0;overflow:hidden}
+summary{cursor:pointer;min-height:52px;padding:12px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:10px;list-style:none}
+summary::before{content:"＋";display:inline-grid;place-items:center;width:30px;height:30px;color:var(--gold);border:1px solid #65808a;border-radius:8px;flex:none}
+details[open]>summary::before{content:"−"}summary::-webkit-details-marker{display:none}
+.item{margin:0 12px 11px;padding:10px 12px 10px 14px;border-left:3px solid var(--gold);background:#1a3242;border-radius:0 8px 8px 0}
+.item strong{font-size:16px}.item p{margin:4px 0 0;font-size:14px}
+.item small{font-weight:800;color:#ffdb9a}a{color:#ffe1a7}a:focus-visible,summary:focus-visible{outline:3px solid #fff;outline-offset:3px}
+footer{margin-top:20px;color:#d4e0e1;font-size:13px}
+@media(min-width:700px){.tally{grid-template-columns:repeat(4,1fr)}}
+</style></head><body>
+<header><strong>🎨 ZGenArtStudio Pro</strong><a href="./index.html" aria-label="Return to painting studio">Back to painting</a></header>
+<main><div class="kicker">22 November 2026 • Artist-owned roadmap</div>
+<h1>Our Studio Build Board</h1>
+<p>Everything we want in the finished painting studio, without sacrificing canvas space. This is a planning and QA page, <b>not a claim that unfinished controls already work.</b></p>
+<section class="hero"><h2>Design lock</h2><p><b>Center:</b> ivory painting canvas. <b>Left and right:</b> three slim, movable rails. <b>Brush settings:</b> three useful sliders at a time near top-left; advanced options tucked away. No giant popups.</p>
+<div class="tally"><div><b>✓ Marks</b><small>Watercolor observed</small></div><div><b>✓ PNG</b><small>Download prompt observed</small></div><div><b>! Fill</b><small>Owner reports fail</small></div><div><b>↻ Lazy</b><small>Partial, tune it</small></div></div></section>
+<section class="section"><h2>Priority worklist</h2>
+<details open><summary>1. Brushes and pencils</summary>
+<div class="item"><small>TO BUILD · C5 + C4</small><br><strong>XS · S · M · L · XL size buttons</strong><p>Quick presets plus fine control for delicate regions. Actual stroke diameter changes, not only labels.</p></div>
+<div class="item"><small>TO BUILD · C5</small><br><strong>★ Favorite brushes</strong><p>Tap a star to keep your best brushes together and restore favorites on return.</p></div>
+<div class="item"><small>TO BUILD · C4</small><br><strong>Graphite, 6B, soft blend pencil, Indian ink</strong><p>Pressure-aware stroke taper, variable width, expressive trailing edge, and useful finger fallback. Confirm distinct marks on S Pen.</p></div>
+<div class="item"><small>TO BUILD · C4</small><br><strong>Watercolor Brush Foundry</strong><p>Keep the excellent working brush and develop Round, Mop, Flat, Rigger, Sponge and Clay Roller. Community brush imports require source and license verification.</p></div></details>
+<details><summary>2. Three intuitive sliders</summary>
+<div class="item"><small>TO BUILD · C5</small><br><strong>Top-left adjustment icon</strong><p>One compact inward drawer with only three active sliders. Watercolor: Size, Water, Pigment. Pencil/ink: Size, Mark Strength, Lazy.</p></div>
+<div class="item"><small>TO BUILD · C4</small><br><strong>Water bleed and pigment balance</strong><p>Light wash must leave an underlying drawing visible. Stronger pigment and wet spread must be genuinely adjustable and independently measurable.</p></div>
+<div class="item"><small>TO VERIFY · C4</small><br><strong>Advanced material settings</strong><p>Opacity, edge pooling, granulation, drying, Harmony and Chaos Blender stay available without cluttering the canvas.</p></div></details>
+<details><summary>3. Underlays and 24-art catalog</summary>
+<div class="item"><small>ARCHIVE RECOVERY · FOSSICK + C5</small><br><strong>Find the real 24 artworks</strong><p>Recover original approved assets from the Basement. Make a scrollable 24-slot image catalog expandable to 48, with no invented placeholders.</p></div>
+<div class="item"><small>TO BUILD · C2 + C5</small><br><strong>Reference layers and personal imports</strong><p>Set independent underlay transparency, position, scale and visibility. Paint translucent watercolor above without losing the tracing image.</p></div>
+<div class="item"><small>TO BUILD · C5</small><br><strong>Gray, dark gray and black</strong><p>Three one-tap stencil tones, plus accurate placement and scaling.</p></div></details>
+<details><summary>4. Finish broken or missing tools</summary>
+<div class="item"><small>OWNER-REPORTED FAIL · C4</small><br><strong>Real region Fill</strong><p>Tap-to-fill stays inside selected boundaries, respects gaps/thresholds, and supports Undo. A button alone does not count.</p></div>
+<div class="item"><small>PARTIAL · C1 + C4</small><br><strong>Lazy Mode and line smoothing</strong><p>Natural steady line without sluggish delay; pen pressure must retain intentional accents.</p></div>
+<div class="item"><small>TO VERIFY · C1 + C2</small><br><strong>History and file behavior</strong><p>Undo, Redo, guarded New/Clear, Stop/Go, fit/pinch/pan/rotate, editable save/reopen, local PNG save and a separate manual Share command.</p></div>
+<div class="item"><small>TO VERIFY · C5 + C2</small><br><strong>Paper surfaces and tint</strong><p>Cold/Hot/Rough Press, warm ivory and subtle pastel papers. Paper choice must appear consistently in the picture and exported PNG.</p></div></details>
+<details><summary>5. Real tests before release</summary>
+<div class="item"><small>C3 INDEPENDENT QA</small><br><strong>Phone and tablet browser tests</strong><p>Check 360/390/430-pixel phones and Tab S9 shapes, visible rails, first-mark timing, fill boundaries, pencil pressure fallback, imported artwork opacity, PNG pixels and saved settings.</p></div>
+<div class="item"><small>S0 SUPERVISOR</small><br><strong>One writer, one job, one proof</strong><p>Track commits, locked engine, branch, tests, failures, rollback and next action. No unverified PASS, silent redeploy or extra hosting.</p></div>
+<div class="item"><small>OWNER AT FINAL GATE</small><br><strong>Only essential artistic acceptance</strong><p>Owner tests OPPO/Tab S9 feel, S Pen control and brush beauty after independent QA. Release stays owner-approved.</p></div></details>
+</section>
+<footer>Working plan: <a href="https://github.com/swan101349-spec/ZGenArtStudio-Pro/issues/5">Pro engineering continuity</a> • <a href="https://github.com/swan101349-spec/zgen-vice-r4-pocket-studio/issues/33">Carpenter supervisor</a>. This board is a snapshot and does not automatically update from GitHub tests.</footer>
+</main></body></html>
