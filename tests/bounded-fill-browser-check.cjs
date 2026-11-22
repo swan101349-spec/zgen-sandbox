@@ -30,6 +30,33 @@ try{
    c.strokeStyle='rgba(53,57,62,1)';c.lineWidth=5;
    c.strokeRect(240,470,240,340);
  });
+ // Pure mask QA: the three Fill controls must change real pigment pixels.
+ const parameterQA=await page.evaluate(()=>{
+   const fill=window.__ZGEN_FILL;
+   const ref=document.querySelector('#reference').getContext('2d').getImageData(0,0,720,1280);
+   const paint=document.querySelector('#paint').getContext('2d').getImageData(0,0,720,1280);
+   const region=fill.identifyRegion(ref,paint,360,640);
+   if(!region.ok)return {error:region.reason};
+   const low=fill.makePatch(region,paint,'#356d95',{coverage:10,soft:40,strength:50});
+   const high=fill.makePatch(region,paint,'#356d95',{coverage:90,soft:40,strength:50});
+   const sharp=fill.makePatch(region,paint,'#356d95',{coverage:100,soft:0,strength:50});
+   const smooth=fill.makePatch(region,paint,'#356d95',{coverage:100,soft:100,strength:50});
+   const count=image=>{let n=0;for(let i=3;i<image.data.length;i+=4)if(image.data[i]>4)n++;return n};
+   let edge;
+   for(let k=0;k<region.length;k++){
+     const n=region.queue[k];
+     if(!region.seen[n-1]||!region.seen[n+1]||!region.seen[n-720]||!region.seen[n+720]){
+       const yy=Math.floor(n/720),xx=n%720;
+       edge=((yy-region.box.y)*region.box.w+(xx-region.box.x))*4+3;
+       if(sharp.data[edge]>10&&smooth.data[edge]>4)break;
+     }
+   }
+   return {low:count(low),high:count(high),sharpAlpha:sharp.data[edge],smoothAlpha:smooth.data[edge]};
+ });
+ assert.ok(!parameterQA.error,'closed real mask detected: '+parameterQA.error);
+ assert.ok(parameterQA.high>parameterQA.low*4,'Coverage slider changes deposited pixel count: '+JSON.stringify(parameterQA));
+ assert.ok(parameterQA.sharpAlpha>parameterQA.smoothAlpha+3,'Soft edge slider fades bounded edge: '+JSON.stringify(parameterQA));
+ console.log('PASS: real mask controls Coverage/Soft Edge '+JSON.stringify(parameterQA));
  const refBefore=await pixels();
  assert.ok(refBefore.graphite[3]>200,'dark reference line exists');
  const pt=await page.evaluate(()=>{
