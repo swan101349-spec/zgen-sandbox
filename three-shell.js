@@ -152,7 +152,9 @@
   favoritesWrap.append(starCurrent,favoritesList);
   left.panel.append(favoritesWrap);
   const brushName=id=>id==='graphite'?'2B Graphite':
-    id==='ink'?'Indian Ink':id.replace(/[-_]/g,' ').replace(/\\b\\w/g,c=>c.toUpperCase());
+    id==='ink'?'Indian Ink':id.replace(/[-_]/g,' ').split(' ').map(
+      word=>word.charAt(0).toUpperCase()+word.slice(1)
+    ).join(' ');
   function refreshFavorites(){
     const active=window.__ZGEN_BETA_26?.state?.().brush||'round';
     const saved=favoriteIds.includes(active);
