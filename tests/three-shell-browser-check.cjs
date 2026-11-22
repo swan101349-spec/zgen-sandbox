@@ -115,7 +115,7 @@ function checkFit(s,name) {
     });
     await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
     await page.locator('#zshell-left .zshell-handle').click();
-    await page.locator('#zshell-left-panel button[data-act=water]').click();
+    await page.locator('#painting-rail button[data-act=water]').click();
     assert.equal(await page.locator('#r-pigment').inputValue(),'31','pigment slider reaches original native engine');
     await page.locator('#drawer button[data-act=close]').click();
 
