@@ -8,7 +8,9 @@
   const canvasTools=app?.querySelector('#canvas-rail');
   const topActions=app?.querySelector('.actions');
   const brushShelf=app?.querySelector('.shelf');
-  if(!viewport||!paint||!drawing||!canvasTools||!topActions||!brushShelf) return;
+  const area=app?.querySelector('#canvasArea');
+  const board=app?.querySelector('#board');
+  if(!viewport||!paint||!drawing||!canvasTools||!topActions||!brushShelf||!area||!board) return;
 
   const make=(side,icon,title)=>{
     const aside=document.createElement('aside');
@@ -39,25 +41,28 @@
   const viewBar=document.createElement('div');
   viewBar.className='zshell-viewbar';
   const fitPaper=document.createElement('button');
-  fitPaper.type='button';fitPaper.textContent='⛶ Fit Paper';
-  fitPaper.setAttribute('aria-label','Show the complete paper');
+  fitPaper.type='button';fitPaper.textContent='⛶ Fit Canvas';
+  fitPaper.setAttribute('aria-label','Automatically fit the complete paper inside the viewing area');
   const fillWidth=document.createElement('button');
   fillWidth.type='button';fillWidth.textContent='↔ Fill Width';
   fillWidth.setAttribute('aria-label','Fill screen width; move to see paper edges');
   viewBar.append(fitPaper,fillWidth);
   right.panel.append(viewBar);
-  let viewMode='fill';
+  // v2 starts with owner-approved Fit Canvas; do not inherit old 'fill' default.
+  let viewMode='fit';
   try{
-    const saved=localStorage.getItem('zgen-paper-view-v1');
+    const saved=localStorage.getItem('zgen-paper-view-v2');
     if(saved==='fit'||saved==='fill')viewMode=saved;
   }catch{}
   function setPaperView(mode,reset=false){
     if(mode!=='fit'&&mode!=='fill')return;
     viewMode=mode;
+    viewport.classList.toggle('zgen-paper-fit',mode==='fit');
     viewport.classList.toggle('zgen-paper-fill',mode==='fill');
+    queuePaperFit();
     fitPaper.setAttribute('aria-pressed',String(mode==='fit'));
     fillWidth.setAttribute('aria-pressed',String(mode==='fill'));
-    try{localStorage.setItem('zgen-paper-view-v1',mode)}catch{}
+    try{localStorage.setItem('zgen-paper-view-v2',mode)}catch{}
     // The original Fit action resets its existing zoom/pan state; this
     // never touches canvas.width, canvas.height, engine or undo memory.
     if(reset){
@@ -69,6 +74,38 @@
       closeAll();
     }
   }
+
+  // Fit Canvas is geometry-only. The original backing canvases stay 720x1280;
+  // resize of the browser never reallocates pixels or resets Undo/Redo.
+  // The historical engine's 470 CSS-pixel cap is bypassed by the separate
+  // stylesheet, without altering the packed painting module.
+  const PAPER_W=720, PAPER_H=1280, PAPER_INSET=10;
+  let paperFitFrame=0;
+  function recalculatePaperFit(){
+    const stageWidth=area.clientWidth, stageHeight=area.clientHeight;
+    if(stageWidth<=0||stageHeight<=0)return;
+    const allowedWidth=Math.max(1,stageWidth-PAPER_INSET);
+    const allowedHeight=Math.max(1,stageHeight-PAPER_INSET);
+    const displayWidth=Math.max(1,Math.floor(
+      viewMode==='fit' ? Math.min(allowedWidth,allowedHeight*PAPER_W/PAPER_H) : allowedWidth
+    ));
+    const displayHeight=displayWidth*PAPER_H/PAPER_W;
+    viewport.style.setProperty('--zgen-paper-width',displayWidth+'px');
+    viewport.style.setProperty('--zgen-paper-height',displayHeight.toFixed(3)+'px');
+  }
+  function queuePaperFit(){
+    if(paperFitFrame)cancelAnimationFrame(paperFitFrame);
+    paperFitFrame=requestAnimationFrame(()=>{
+      paperFitFrame=0;
+      recalculatePaperFit();
+    });
+  }
+  if(typeof ResizeObserver!=='undefined'){
+    new ResizeObserver(queuePaperFit).observe(area);
+  }
+  window.addEventListener('resize',queuePaperFit);
+  window.visualViewport?.addEventListener('resize',queuePaperFit);
+  window.addEventListener('orientationchange',queuePaperFit);
   let internalFit=false;
   fitPaper.addEventListener('click',()=>setPaperView('fit',true));
   fillWidth.addEventListener('click',()=>setPaperView('fill',true));
@@ -124,5 +161,5 @@
   viewport.addEventListener('pointerdown',ev=>{
     if(!ev.target.closest('.zshell,.drawer')) closeAll();
   },true);
-  window.__ZGEN_THREE_SHELL={version:'2026-11-22',paintingModuleModified:false,closeAll};
+  window.__ZGEN_THREE_SHELL={version:'2026-11-22-auto-fit',paintingModuleModified:false,closeAll,recalculatePaperFit,get viewMode(){return viewMode}};
 })();
