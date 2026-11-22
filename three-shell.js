@@ -161,5 +161,160 @@
   viewport.addEventListener('pointerdown',ev=>{
     if(!ev.target.closest('.zshell,.drawer')) closeAll();
   },true);
+
+  // Artist's contextual adjustment dock. Directly drives the original engine's
+  // already-wired 'data-setting' document input handler, without touching wet
+  // simulation code or painting canvas dimensions/history.
+  const settings={size:22,water:68,pigment:78,opacity:96,lazy:0};
+  const settingsRange={
+    size:[1,100],water:[0,100],pigment:[0,100],
+    opacity:[1,100],lazy:[0,70]
+  };
+  const sizePresets={XS:3,S:10,M:22,L:45,XL:80};
+  const adjustButton=document.createElement('button');
+  adjustButton.type='button';
+  adjustButton.className='zshell-adjust-handle';
+  adjustButton.textContent='☷';
+  adjustButton.setAttribute('aria-label','Brush adjustments: three sliders');
+  adjustButton.setAttribute('aria-controls','zshell-adjust-panel');
+  adjustButton.setAttribute('aria-expanded','false');
+  const adjustPanel=document.createElement('section');
+  adjustPanel.id='zshell-adjust-panel';
+  adjustPanel.className='zshell-adjust-panel';
+  adjustPanel.setAttribute('aria-label','Three active brush adjustments');
+  adjustPanel.hidden=true;
+  viewport.append(adjustButton,adjustPanel);
+  function currentBrush(){
+    return window.__ZGEN_BETA_26?.state?.().brush || 'round';
+  }
+  function isDrawingBrush(){
+    return ['ink','graphite'].includes(currentBrush());
+  }
+  function readKnownEngineState(){
+    const live=window.__ZGEN_BETA_26?.state?.();
+    if(live){
+      if(Number.isFinite(live.size))settings.size=live.size;
+      if(Number.isFinite(live.water))settings.water=live.water;
+    }
+    for(const key of Object.keys(settings)){
+      const native=app.querySelector('#drawer input[data-setting="'+key+'"]');
+      if(native&&Number.isFinite(Number(native.value)))settings[key]=Number(native.value);
+    }
+  }
+  function contextualFields(){
+    return isDrawingBrush()
+      ? [['size','Size'],['opacity','Mark strength'],['lazy','Lazy']]
+      : [['size','Size'],['water','Water'],['pigment','Pigment']];
+  }
+  function updatePresetState(){
+    adjustPanel.querySelectorAll('[data-size-preset]').forEach(button=>{
+      button.setAttribute('aria-pressed',String(Number(settings.size)===sizePresets[button.dataset.sizePreset]));
+    });
+  }
+  function rebuildAdjustPanel(){
+    readKnownEngineState();
+    const drawing=isDrawingBrush();
+    adjustPanel.replaceChildren();
+    const head=document.createElement('div');head.className='zshell-adjust-title';
+    const title=document.createElement('strong');title.textContent=drawing?'Pencil / ink settings':'Watercolor settings';
+    const close=document.createElement('button');close.type='button';close.textContent='×';
+    close.className='zshell-adjust-close';close.setAttribute('aria-label','Close brush adjustments');
+    close.addEventListener('click',()=>setAdjustOpen(false));
+    head.append(title,close);adjustPanel.append(head);
+    for(const [key,label] of contextualFields()){
+      const wrap=document.createElement('label');wrap.className='zshell-adjust-row';
+      const name=document.createElement('span');name.textContent=label;
+      const output=document.createElement('output');output.textContent=String(settings[key]);
+      output.className='zshell-adjust-value';
+      const slider=document.createElement('input');
+      slider.type='range';
+      slider.dataset.setting=key;
+      slider.min=String(settingsRange[key][0]);
+      slider.max=String(settingsRange[key][1]);
+      slider.step='1';
+      slider.value=String(settings[key]);
+      slider.setAttribute('aria-label',label);
+      slider.addEventListener('input',()=>{output.textContent=slider.value;settings[key]=Number(slider.value);updatePresetState()});
+      wrap.append(name,output,slider);adjustPanel.append(wrap);
+    }
+    const presets=document.createElement('div');presets.className='zshell-size-presets';
+    presets.setAttribute('role','group');
+    presets.setAttribute('aria-label','Brush diameter presets');
+    for(const [name,size] of Object.entries(sizePresets)){
+      const button=document.createElement('button');
+      button.type='button';
+      button.textContent=name;
+      button.dataset.sizePreset=name;
+      button.setAttribute('aria-label',name+' brush size, '+size+' out of 100');
+      button.addEventListener('click',()=>{
+        const slider=adjustPanel.querySelector('input[data-setting="size"]');
+        if(!slider)return;
+        slider.value=String(size);
+        slider.dispatchEvent(new Event('input',{bubbles:true}));
+      });
+      presets.append(button);
+    }
+    adjustPanel.append(presets);
+    const hint=document.createElement('p');hint.className='zshell-adjust-hint';
+    hint.textContent='Changes apply to your next real brush or pencil mark.';
+    adjustPanel.append(hint);
+    updatePresetState();
+  }
+  function setAdjustOpen(open){
+    if(open){
+      closeAll();
+      const nativeDrawer=app.querySelector('#drawer');
+      if(nativeDrawer && !nativeDrawer.hidden){
+        const nativeClose=nativeDrawer.querySelector('button[data-act="close"]');
+        if(nativeClose)nativeClose.click();
+        else nativeDrawer.hidden=true;
+      }
+      rebuildAdjustPanel();
+    }
+    adjustPanel.hidden=!open;
+    adjustButton.setAttribute('aria-expanded',String(open));
+  }
+  adjustButton.addEventListener('click',()=>setAdjustOpen(adjustPanel.hidden));
+  document.addEventListener('input',event=>{
+    const key=event.target?.dataset?.setting;
+    if(!(key in settings))return;
+    const value=Number(event.target.value);
+    if(Number.isFinite(value)){
+      settings[key]=Math.max(settingsRange[key][0],Math.min(settingsRange[key][1],value));
+      if(!adjustPanel.hidden && !adjustPanel.contains(event.target)){
+        const slider=adjustPanel.querySelector('input[data-setting="'+key+'"]');
+        if(slider)slider.value=String(settings[key]);
+        const output=slider?.closest('label')?.querySelector('output');
+        if(output)output.textContent=String(settings[key]);
+        updatePresetState();
+      }
+    }
+  });
+  document.addEventListener('click',event=>{
+    if(event.target.closest('[data-brush]')&&!adjustPanel.hidden){
+      requestAnimationFrame(rebuildAdjustPanel);
+    }
+    // Opening another existing dock or native tool picker closes adjustments.
+    if(event.target.closest('.zshell-handle,[data-act]') &&
+       !event.target.closest('#zshell-adjust-panel')){
+      setAdjustOpen(false);
+    }
+  });
+  viewport.addEventListener('pointerdown',event=>{
+    if(!adjustPanel.hidden && !event.target.closest('#zshell-adjust-panel,.zshell-adjust-handle')){
+      setAdjustOpen(false);
+    }
+  },true);
+  window.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&!adjustPanel.hidden)setAdjustOpen(false);
+  });
+  window.__ZGEN_BRUSH_CONTROLS={
+    version:'2026-11-22-3-controls',
+    get size(){return settings.size},
+    get mode(){return isDrawingBrush()?'drawing':'watercolor'},
+    get open(){return !adjustPanel.hidden},
+    close:()=>setAdjustOpen(false)
+  };
+
   window.__ZGEN_THREE_SHELL={version:'2026-11-22-auto-fit',paintingModuleModified:false,closeAll,recalculatePaperFit,get viewMode(){return viewMode}};
 })();
