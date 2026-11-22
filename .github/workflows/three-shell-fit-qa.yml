@@ -8,6 +8,7 @@ on:
       - 'bounded-fill.css'
       - 'shell-v2.html'
       - 'tests/bounded-fill-browser-check.cjs'
+      - 'tests/bounded-fill-source-integrity.cjs'
       - 'tests/three-shell-fit-check.cjs'
       - 'tests/three-shell-browser-check.cjs'
       - '.github/workflows/three-shell-fit-qa.yml'
@@ -30,6 +31,7 @@ jobs:
           node --check three-shell.js
           node --check bounded-fill.js
           node --check tests/bounded-fill-browser-check.cjs
+          node tests/bounded-fill-source-integrity.cjs
           node tests/three-shell-fit-check.cjs
           node --check tests/three-shell-browser-check.cjs
       - name: Install isolated Chromium test dependency
