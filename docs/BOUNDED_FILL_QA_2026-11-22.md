@@ -13,7 +13,7 @@ Existing 720 × 1280 native rendering pixels, canvas gestures outside Fill, wate
 - [Chromium run 44994059620](https://github.com/swan101349-spec/zgen-sandbox/actions/runs/44994059620) **PASS**: real simulated touchscreen taps, not only internal Fill function.
 - [Chromium run 44994103832](https://github.com/swan101349-spec/zgen-sandbox/actions/runs/44994103832) **PASS**: high/low Coverage and Soft Edge produce measurably different pixels while remaining bounded; all previous history/PNG/graphite tests passed.
 - `tests/bounded-fill-source-integrity.cjs` matches decoded packed module from `index.html` against `shell-v2.html` after removal of the single audited 746-byte bridge; **114,233 original bytes identical**.
-- Final CI workflow `44994166361` for source-integrity + browser QA should be read for its final conclusion; do not claim pass before GitHub confirms it.
+- [Final integrated GitHub Actions run 44994166361](https://github.com/swan101349-spec/zgen-sandbox/actions/runs/44994166361) **PASS (SUCCESS)**: byte-identity source proof; phone/tablet Fit; 2B XS/XL; actual Undo/Redo/PNG; 12 menu cycles; favorites; Coverage 9,095 vs 69,536 colored pixels, Soft Edge alpha 64 vs 35 at boundary; simulated mobile tap Fill inside a closed reference; open-outline safe refusal.
 
 ## Explicit non-PASS
 Real Tab S9 / OPPO physical finger and S Pen acceptance, detailed imported cartoon with fragile antialiasing, arbitrary open/ambiguous artwork, long wet-flow scene under memory pressure, repeat fill saturation and PNG print aesthetics remain unverified. Protection guard: do not ship the Fill candidate to live Pages main, WordPress or production without reviewing all hardware/test gates.
