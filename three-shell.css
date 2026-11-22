@@ -224,3 +224,20 @@
 @media(max-height:450px){
   #app .zshell-adjust-panel{max-height:80dvh}
 }
+
+/* Brush favorites: compact, stored locally; native data-brush selects engine. */
+.zshell-favorites{margin:2px 0 8px}
+.zshell-fav-toggle{
+  width:100%;min-height:39px;padding:5px 7px;
+  border:1px solid #d4b36e;background:#2b4857;
+  color:#ffe1a3;border-radius:8px;text-align:left;
+  font:750 12px/1.25 system-ui;touch-action:manipulation;
+}
+.zshell-fav-toggle[aria-pressed="true"]{background:#4b4129;color:#ffedbd}
+.zshell-fav-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:5px}
+.zshell-fav-list button{
+  min-width:0;min-height:38px;padding:5px 4px;
+  border:1px solid #a99259;border-radius:7px;background:#294454;
+  color:#fff3d8;font:700 11px/1.2 system-ui;touch-action:manipulation;
+}
+.zshell-fav-list small{grid-column:1/-1;color:#c3d3d5;font-size:11px}
