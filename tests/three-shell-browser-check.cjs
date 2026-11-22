@@ -92,6 +92,82 @@ function checkFit(s,name) {
     await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
     checkFit(await snapshot(page),'fit-return');
 
+
+    // Real original engine wiring: only THREE contextual sliders at once.
+    await page.setViewportSize({width:390,height:780});
+    await page.waitForTimeout(120);
+    await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
+    await page.locator('.zshell-adjust-handle').click();
+    assert.equal(await page.locator('#zshell-adjust-panel input[type=range]').count(),3,'watercolor: exactly three sliders');
+    assert.deepEqual(await page.locator('#zshell-adjust-panel input[data-setting]').evaluateAll(
+      nodes=>nodes.map(x=>x.dataset.setting)),['size','water','pigment'],'watercolor: contextual fields');
+    assert.equal(await page.locator('#zshell-adjust-panel [data-size-preset]').count(),5,'XS to XL buttons');
+    await page.locator('#zshell-adjust-panel [data-size-preset=XL]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),80,'XL changes real engine size');
+    await page.locator('#zshell-adjust-panel [data-size-preset=XS]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),3,'XS changes real engine size');
+    await page.locator('#zshell-adjust-panel input[data-setting=water]').evaluate(slider=>{
+      slider.value='24';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().water),24,'water slider changes engine');
+    await page.locator('#zshell-adjust-panel input[data-setting=pigment]').evaluate(slider=>{
+      slider.value='31';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+    await page.locator('#zshell-left .zshell-handle').click();
+    await page.locator('#zshell-left-panel button[data-act=water]').click();
+    assert.equal(await page.locator('#r-pigment').inputValue(),'31','pigment slider reaches original native engine');
+    await page.locator('#drawer button[data-act=close]').click();
+
+    // Switch to actual existing 2B Graphite; the same adjustments become
+    // Size, Mark Strength (opacity), Lazy, rather than watercolor controls.
+    await page.locator('#zshell-left .zshell-handle').click();
+    await page.locator('#zshell-left-panel button[data-brush=graphite]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().brush),'graphite','actual graphite brush selected');
+    await page.locator('.zshell-adjust-handle').click();
+    assert.deepEqual(await page.locator('#zshell-adjust-panel input[data-setting]').evaluateAll(
+      nodes=>nodes.map(x=>x.dataset.setting)),['size','opacity','lazy'],'graphite: three distinct fields');
+    await page.locator('#zshell-adjust-panel input[data-setting=opacity]').evaluate(slider=>{
+      slider.value='54';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.locator('#zshell-adjust-panel input[data-setting=lazy]').evaluate(slider=>{
+      slider.value='0';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.locator('#zshell-adjust-panel [data-size-preset=XS]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),3,'graphite XS size is real');
+    await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+
+    const rect=await page.locator('#board').boundingBox();
+    assert.ok(rect && rect.width>100,'paper visible for true graphite marks');
+    const drawAt=async fractionY=>{
+      const startX=rect.x+rect.width*.40,endX=rect.x+rect.width*.60;
+      const y=rect.y+rect.height*fractionY;
+      await page.mouse.move(startX,y);
+      await page.mouse.down();
+      await page.mouse.move(endX,y,{steps:14});
+      await page.mouse.up();
+    };
+    await drawAt(.26);
+    await page.locator('.zshell-adjust-handle').click();
+    await page.locator('#zshell-adjust-panel [data-size-preset=XL]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),80,'graphite XL changes real engine');
+    await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+    await drawAt(.74);
+    const marks=await page.evaluate(()=>{
+      const c=document.getElementById('paint');
+      const ctx=c.getContext('2d',{willReadFrequently:true});
+      function pixels(fy){
+        const box=ctx.getImageData(230,Math.round(1280*fy)-110,260,220);
+        let marked=0;
+        for(let i=3;i<box.data.length;i+=4)if(box.data[i]>4)marked++;
+        return marked;
+      }
+      return {xs:pixels(.26),xl:pixels(.74)};
+    });
+    assert.ok(marks.xs>3,'XS graphite visibly marks actual canvas ('+marks.xs+')');
+    assert.ok(marks.xl>marks.xs*2,'XL graphite makes physically larger stroke: '+JSON.stringify(marks));
+    console.log('PASS: contextual 3 slider modes, XS/XL real size and 2B graphite pixel coverage '+JSON.stringify(marks));
+
     const retainedPixel=await page.evaluate(()=>{
       const canvas=document.getElementById('reference');
       return Array.from(canvas.getContext('2d',{willReadFrequently:true}).getImageData(11,13,1,1).data);
