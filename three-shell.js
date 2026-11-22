@@ -33,6 +33,51 @@
   const right=make('right','⚙','Tools');
   const bottom=make('bottom','🎨','Colors & Artwork');
   const shells=[left,right,bottom];
+
+  // View-only change: native paper drawing pixels and existing 720x1280
+  // history are never resized or reallocated. CSS controls display width.
+  const viewBar=document.createElement('div');
+  viewBar.className='zshell-viewbar';
+  const fitPaper=document.createElement('button');
+  fitPaper.type='button';fitPaper.textContent='⛶ Fit Paper';
+  fitPaper.setAttribute('aria-label','Show the complete paper');
+  const fillWidth=document.createElement('button');
+  fillWidth.type='button';fillWidth.textContent='↔ Fill Width';
+  fillWidth.setAttribute('aria-label','Fill screen width; move to see paper edges');
+  viewBar.append(fitPaper,fillWidth);
+  right.panel.append(viewBar);
+  let viewMode='fill';
+  try{
+    const saved=localStorage.getItem('zgen-paper-view-v1');
+    if(saved==='fit'||saved==='fill')viewMode=saved;
+  }catch{}
+  function setPaperView(mode,reset=false){
+    if(mode!=='fit'&&mode!=='fill')return;
+    viewMode=mode;
+    viewport.classList.toggle('zgen-paper-fill',mode==='fill');
+    fitPaper.setAttribute('aria-pressed',String(mode==='fit'));
+    fillWidth.setAttribute('aria-pressed',String(mode==='fill'));
+    try{localStorage.setItem('zgen-paper-view-v1',mode)}catch{}
+    // The original Fit action resets its existing zoom/pan state; this
+    // never touches canvas.width, canvas.height, engine or undo memory.
+    if(reset){
+      const originalFit=canvasTools.querySelector('button[data-act="fit"]');
+      if(originalFit){
+        internalFit=true;
+        try{originalFit.click()}finally{internalFit=false}
+      }
+      closeAll();
+    }
+  }
+  let internalFit=false;
+  fitPaper.addEventListener('click',()=>setPaperView('fit',true));
+  fillWidth.addEventListener('click',()=>setPaperView('fill',true));
+  document.addEventListener('click',event=>{
+    if(!internalFit&&event.target.closest('button[data-act="fit"]')){
+      setPaperView('fit');
+    }
+  },true);
+  setPaperView(viewMode);
   function subhead(parent,title){
     const line=document.createElement('div');line.className='zshell-subtitle';
     line.textContent=title;parent.append(line);
