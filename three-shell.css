@@ -46,10 +46,15 @@
 
 
 /* 22 Nov artist review: paper-first fit controls and compact half-pans. Layout only. */
+#app .viewport.zgen-paper-fit #board,
 #app .viewport.zgen-paper-fill #board{
-  width:calc(100% - 8px)!important;
+  width:var(--zgen-paper-width, 100%)!important;
+  height:var(--zgen-paper-height, auto)!important;
+  aspect-ratio:9/16!important;
   max-width:none!important;
+  max-height:none!important;
   min-width:0!important;
+  min-height:0!important;
 }
 .zshell-viewbar{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
@@ -123,4 +128,46 @@
   #app .drawer .pigments{
     grid-template-columns:repeat(auto-fill,minmax(32px,1fr))!important;
   }
+}
+
+
+/* 22 Nov owner-approved auto Fit Canvas: remove UI bulk without
+   changing 720x1280 paint backing, pointer events or art proportions. */
+.zshell.left .zshell-handle,.zshell.right .zshell-handle{
+  width:42px!important;
+  min-height:57px!important;
+  font-size:17px!important;
+}
+.zshell.left .zshell-handle small,.zshell.right .zshell-handle small{
+  font-size:10px!important;
+}
+.zshell.bottom{
+  left:50%!important;
+  right:auto!important;
+  width:min(174px,calc(100vw - 16px))!important;
+  transform:translateX(-50%);
+}
+.zshell.bottom .zshell-handle{
+  width:100%!important;
+  height:42px!important;
+  min-height:42px!important;
+  gap:5px!important;
+  font-size:14px!important;
+}
+.zshell.bottom .zshell-handle small{font-size:11px!important}
+.zshell.bottom .zshell-panel{
+  width:min(410px,calc(100vw - 18px))!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translateX(-50%);
+  bottom:47px!important;
+}
+#app .drawer .pigments{
+  grid-template-columns:repeat(auto-fill,minmax(31px,1fr))!important;
+  gap:3px!important;
+}
+#app .drawer .pigments button{
+  max-width:34px!important;
+  min-height:32px!important;
+  border-radius:8px!important;
 }
