@@ -243,7 +243,24 @@
     size:[1,100],water:[0,100],pigment:[0,100],
     opacity:[1,100],lazy:[0,70],coverage:[0,100],soft:[0,100],strength:[0,100]
   };
+  // Five human-readable sizes are the only necessary everyday diameter control.
+  // Values are native engine input, not millimetres. All mark-making tools share
+  // this contract, while preserving independent per-tool last-used sizes.
   const sizePresets={XS:3,S:10,M:22,L:45,XL:80};
+  const toolSizeStoreKey='zgen-per-brush-size-v1';
+  const toolSizes=Object.create(null);
+  try {
+    const stored=JSON.parse(localStorage.getItem(toolSizeStoreKey)||'{}');
+    if(stored&&typeof stored==='object'&&!Array.isArray(stored)){
+      for(const [key,value] of Object.entries(stored).slice(0,64)){
+        if(/^[a-z][a-z0-9_-]{0,48}$/i.test(key)&&Number.isInteger(value)&&value>=1&&value<=100)
+          toolSizes[key]=value;
+      }
+    }
+  }catch{} // Incognito/private storage denied: keep sizes for this session.
+  function persistToolSizes(){
+    try{localStorage.setItem(toolSizeStoreKey,JSON.stringify(toolSizes))}catch{}
+  }
   const adjustButton=document.createElement('button');
   adjustButton.type='button';
   adjustButton.className='zshell-adjust-handle';
@@ -263,6 +280,56 @@
   function isDrawingBrush(){
     return ['ink','graphite'].includes(currentBrush());
   }
+  // The native delegated data-setting input handler is the single authority
+  // for real brush size. No replacement brush renderer or new pointer events.
+  const sizeRelay=document.createElement('input');
+  sizeRelay.type='range';sizeRelay.min='1';sizeRelay.max='100';
+  sizeRelay.step='1';sizeRelay.dataset.setting='size';sizeRelay.hidden=true;
+  sizeRelay.setAttribute('aria-hidden','true');
+  sizeRelay.tabIndex=-1;
+  viewport.append(sizeRelay);
+  let activeBrush=currentBrush();
+  function defaultSizeFor(brush){
+    return /(?:graphite|ink|pencil|pen|rigger|liner|detail)/i.test(brush) ? sizePresets.XS : sizePresets.M;
+  }
+  function setNativeToolSize(size){
+    if(window.__ZGEN_FILL?.active)return false; // Tap Fill is a region tool, not a diameter.
+    if(!Number.isInteger(size)||size<1||size>100)return false;
+    sizeRelay.value=String(size);
+    sizeRelay.dispatchEvent(new Event('input',{bubbles:true}));
+    const actual=Number(window.__ZGEN_BETA_26?.state?.().size);
+    if(actual!==size)return false; // Fail closed instead of claiming a UI-only size.
+    settings.size=size;
+    toolSizes[activeBrush]=size;
+    persistToolSizes();
+    const shown=adjustPanel.querySelector('input[data-setting="size"]');
+    if(shown){
+      shown.value=String(size);
+      const output=shown.closest('label')?.querySelector('output');
+      if(output)output.textContent=String(size);
+    }
+    updatePresetState();
+    return true;
+  }
+  function syncSelectedBrush(){
+    const selected=currentBrush();
+    if(selected===activeBrush)return;
+    // Save the actual selected brush size before native brush selection swaps tools.
+    if(Number.isInteger(settings.size)&&settings.size>=1&&settings.size<=100)
+      toolSizes[activeBrush]=settings.size;
+    activeBrush=selected;
+    const next=toolSizes[selected]??defaultSizeFor(selected);
+    setNativeToolSize(next);
+    if(!adjustPanel.hidden)rebuildAdjustPanel();
+  }
+  // Original app can restore a selected brush before shell setup finishes.
+  // Fine drawing tools always get a controlled small first mark.
+  requestAnimationFrame(()=>{
+    activeBrush=currentBrush();
+    const stored=toolSizes[activeBrush];
+    if(stored!==undefined || /(?:graphite|ink|pencil|pen|rigger|liner|detail)/i.test(activeBrush))
+      setNativeToolSize(stored??defaultSizeFor(activeBrush));
+  });
   function readKnownEngineState(){
     const live=window.__ZGEN_BETA_26?.state?.();
     if(live){
@@ -288,6 +355,7 @@
   function rebuildAdjustPanel(){
     readKnownEngineState();
     const drawing=isDrawingBrush();
+    const fillActive=!!window.__ZGEN_FILL?.active;
     adjustPanel.replaceChildren();
     const head=document.createElement('div');head.className='zshell-adjust-title';
     const title=document.createElement('strong');title.textContent=window.__ZGEN_FILL?.active?'Watercolor Fill settings':drawing?'Pencil / ink settings':'Watercolor settings';
@@ -295,6 +363,11 @@
     close.className='zshell-adjust-close';close.setAttribute('aria-label','Close brush adjustments');
     close.addEventListener('click',()=>setAdjustOpen(false));
     head.append(title,close);adjustPanel.append(head);
+    const advanced=document.createElement('details');
+    advanced.className='zshell-advanced';
+    const advancedLabel=document.createElement('summary');
+    advancedLabel.textContent='More controls (optional)';
+    advanced.append(advancedLabel);
     for(const [key,label] of contextualFields()){
       const wrap=document.createElement('label');wrap.className='zshell-adjust-row';
       const name=document.createElement('span');name.textContent=label;
@@ -309,7 +382,8 @@
       slider.value=String(settings[key]);
       slider.setAttribute('aria-label',label);
       slider.addEventListener('input',()=>{output.textContent=slider.value;settings[key]=Number(slider.value);updatePresetState()});
-      wrap.append(name,output,slider);adjustPanel.append(wrap);
+      wrap.append(name,output,slider);
+      (fillActive?adjustPanel:advanced).append(wrap);
     }
     const presets=document.createElement('div');presets.className='zshell-size-presets';
     presets.setAttribute('role','group');
@@ -328,7 +402,7 @@
       });
       presets.append(button);
     }
-    if(!window.__ZGEN_FILL?.active)adjustPanel.append(presets);
+    if(!fillActive)adjustPanel.append(presets,advanced);
     const hint=document.createElement('p');hint.className='zshell-adjust-hint';
     hint.textContent='Changes apply to your next real brush or pencil mark.';
     adjustPanel.append(hint);
@@ -356,6 +430,10 @@
     const value=Number(event.target.value);
     if(Number.isFinite(value)){
       settings[key]=Math.max(settingsRange[key][0],Math.min(settingsRange[key][1],value));
+      if(key==='size' && !window.__ZGEN_FILL?.active){
+        toolSizes[activeBrush]=settings.size;
+        persistToolSizes();
+      }
       if(!adjustPanel.hidden && !adjustPanel.contains(event.target)){
         const slider=adjustPanel.querySelector('input[data-setting="'+key+'"]');
         if(slider)slider.value=String(settings[key]);
@@ -366,8 +444,8 @@
     }
   });
   document.addEventListener('click',event=>{
-    if(event.target.closest('[data-brush]')&&!adjustPanel.hidden){
-      requestAnimationFrame(rebuildAdjustPanel);
+    if(event.target.closest('[data-brush]')){
+      requestAnimationFrame(syncSelectedBrush);
     }
     // Opening another existing dock or native tool picker closes adjustments.
     if(event.target.closest('.zshell-handle,[data-act]') &&
@@ -384,8 +462,27 @@
     if(event.key==='Escape'&&!adjustPanel.hidden)setAdjustOpen(false);
   });
   window.__ZGEN_BRUSH_CONTROLS={
-    version:'2026-11-22-3-controls',
-    get size(){return settings.size},
+    version:'2026-11-23-per-tool-tap-size',
+    get size(){return Number(window.__ZGEN_BETA_26?.state?.().size)||settings.size},
+    get brush(){return activeBrush},
+    get storedSizes(){return {...toolSizes}},
+    setPreset(name){
+      const key=String(name).trim().toUpperCase();
+      if(!Object.prototype.hasOwnProperty.call(sizePresets,key))return false;
+      return setNativeToolSize(sizePresets[key]);
+    },
+    stepSize(direction){
+      if(window.__ZGEN_FILL?.active)return false;
+      const vals=Object.values(sizePresets);
+      const current=Number(window.__ZGEN_BETA_26?.state?.().size)||settings.size;
+      let index=0;
+      for(let n=1;n<vals.length;n++)
+        if(Math.abs(vals[n]-current)<Math.abs(vals[index]-current))index=n;
+      const step=Number(direction);
+      if(!Number.isFinite(step)||step===0)return false;
+      const next=Math.max(0,Math.min(vals.length-1,index+(step>0?1:-1)));
+      return setNativeToolSize(vals[next]);
+    },
     get mode(){return isDrawingBrush()?'drawing':'watercolor'},
     get open(){return !adjustPanel.hidden},
     close:()=>setAdjustOpen(false),
