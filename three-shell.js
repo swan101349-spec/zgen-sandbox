@@ -445,7 +445,10 @@
   });
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-brush]')){
-      requestAnimationFrame(syncSelectedBrush);
+      // Native app registered its document click listener before this adapter.
+      // It has already selected the tool, so apply its remembered size NOW,
+      // not a frame later. This avoids an accidental oversized first stroke.
+      syncSelectedBrush();
     }
     // Opening another existing dock or native tool picker closes adjustments.
     if(event.target.closest('.zshell-handle,[data-act]') &&
