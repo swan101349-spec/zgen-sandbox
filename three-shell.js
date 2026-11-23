@@ -46,8 +46,25 @@
   const fillWidth=document.createElement('button');
   fillWidth.type='button';fillWidth.textContent='↔ Fill Width';
   fillWidth.setAttribute('aria-label','Fill screen width; move to see paper edges');
-  viewBar.append(fitPaper,fillWidth);
+  // 180-degree artist workspace switch: exchange left/right rail positions,
+  // never rotate the actual paper or invert S Pen drawing coordinates.
+  const swapRails=document.createElement('button');
+  swapRails.type='button';
+  swapRails.className='zshell-rail-swap';
+  swapRails.textContent='⤾ Swap rails 180°';
+  swapRails.setAttribute('aria-label','Swap Brushes and Tools between left and right sides');
+  let railsSwapped=false;
+  try{railsSwapped=localStorage.getItem('zgen-rails-swapped-v1')==='true'}catch{}
+  function applyRailSwap(){
+    viewport.classList.toggle('zgen-rails-swapped',railsSwapped);
+    swapRails.setAttribute('aria-pressed',String(railsSwapped));
+    swapRails.title=railsSwapped?'Brushes on right, Tools on left':'Brushes on left, Tools on right';
+    try{localStorage.setItem('zgen-rails-swapped-v1',String(railsSwapped))}catch{}
+  }
+  swapRails.addEventListener('click',()=>{railsSwapped=!railsSwapped;applyRailSwap()});
+  viewBar.append(fitPaper,fillWidth,swapRails);
   right.panel.append(viewBar);
+  applyRailSwap();
   // v2 starts with owner-approved Fit Canvas; do not inherit old 'fill' default.
   let viewMode='fit';
   try{
@@ -189,17 +206,15 @@
   refreshFavorites();
   subhead(right.panel,'Canvas operations');right.panel.append(canvasTools);
   subhead(right.panel,'STOP / GO · file controls');right.panel.append(topActions);
-  const group=document.createElement('div');group.className='zshell-actions';
-  const old=document.createElement('a');old.href='./index.html';
-  old.textContent='↶ Original layout';old.setAttribute('aria-label','Return to original studio layout');
-  group.append(old);right.panel.append(group);
+  // The prior "Original layout" link now pointed to the same current beta root.
+  // Remove that dead-end navigation rather than pretending it changes editors.
   subhead(bottom.panel,'Selected brush');bottom.panel.append(brushShelf);
   subhead(bottom.panel,'44-pigment palette');
   buttons(bottom.panel,[['color','🎨 Choose pigments'],['water','💧 Water & pigment']]);
   subhead(bottom.panel,'Artwork · sketches · imported underlays');
-  buttons(bottom.panel,[['import','⬆ Import image'],['trace','▧ Trace / underlay'],['files','▣ Save & projects'],['brush','🖌 Brush picker']]);
+  buttons(bottom.panel,[['import','⬆ Import image'],['trace','▧ Trace / underlay'],['files','▣ Files / Export PNG'],['brush','🖌 Brush picker']]);
   const note=document.createElement('p');note.className='zshell-note';
-  note.textContent='Import and tracing use the real existing tools. The persistent thumbnail gallery and stencil catalog are still on the build board.';
+  note.textContent='Import, tracing, Fill, Undo/Redo and Export PNG use the real tools. Editable wet-project Save/Reopen and additional lyrical pencil grades are not yet connected to this beta.';
   bottom.panel.append(note);
 
   function closeAll(){
