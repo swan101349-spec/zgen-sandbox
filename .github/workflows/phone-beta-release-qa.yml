@@ -1,0 +1,71 @@
+name: C3 Owner Phone Beta Release Gate
+on:
+  push:
+    branches:
+      - qa/current-phone-beta-release-20261123
+    paths:
+      - index.html
+      - original-engine.html
+      - tests/bounded-fill-source-integrity.cjs
+      - shell-v2.html
+      - bounded-fill.js
+      - bounded-fill.css
+      - three-shell.js
+      - three-shell.css
+      - tests/current-phone-root-browser-check.cjs
+      - .github/workflows/phone-beta-release-qa.yml
+  pull_request:
+    paths:
+      - index.html
+      - original-engine.html
+      - tests/bounded-fill-source-integrity.cjs
+      - shell-v2.html
+      - bounded-fill.js
+      - bounded-fill.css
+      - three-shell.js
+      - three-shell.css
+      - tests/current-phone-root-browser-check.cjs
+      - .github/workflows/phone-beta-release-qa.yml
+permissions:
+  contents: read
+jobs:
+  actual-phone-beta:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original bundled painter source and shell syntax
+        run: |
+          node --check three-shell.js
+          node --check bounded-fill.js
+          node tests/bounded-fill-source-integrity.cjs
+          node tests/three-shell-fit-check.cjs
+          node --check tests/current-phone-root-browser-check.cjs
+      - name: Install Chromium browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Original real shell + bounded Fill and exact phone shortcut root
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . > /tmp/zgen-phone-beta.log 2>&1 &
+          srv_pid=$!
+          trap 'kill "$srv_pid" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/index.html > /dev/null && break || sleep 1
+          done
+          node tests/three-shell-browser-check.cjs
+          node tests/bounded-fill-browser-check.cjs
+          node tests/current-phone-root-browser-check.cjs
+      - name: Preserve phone/tablet screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-phone-beta-root-qa
+          path: three-shell-browser-qa/
+          if-no-files-found: ignore

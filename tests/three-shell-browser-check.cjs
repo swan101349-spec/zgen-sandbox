@@ -1,0 +1,281 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {chromium} = require('playwright');
+
+const outDir = 'three-shell-browser-qa';
+fs.mkdirSync(outDir,{recursive:true});
+const fixtures = [
+  {name:'phone360',width:360,height:740},
+  {name:'phone390',width:390,height:780},
+  {name:'phone430',width:430,height:850},
+  {name:'tablet-portrait',width:800,height:1180},
+  {name:'tablet-landscape',width:1180,height:760}
+];
+const approx=(a,b,tol=2)=>Math.abs(a-b)<=tol;
+async function snapshot(page) {
+  return page.evaluate(()=>{
+    const area=document.getElementById('canvasArea').getBoundingClientRect();
+    const board=document.getElementById('board').getBoundingClientRect();
+    const bottom=document.querySelector('#zshell-bottom .zshell-handle').getBoundingClientRect();
+    const paint=document.getElementById('paint');
+    const reference=document.getElementById('reference');
+    return {
+      mode:window.__ZGEN_THREE_SHELL?.viewMode,
+      area:{x:area.x,y:area.y,width:area.width,height:area.height},
+      board:{x:board.x,y:board.y,width:board.width,height:board.height},
+      bottomWidth:bottom.width,
+      backing:[paint.width,paint.height,reference.width,reference.height]
+    };
+  });
+}
+function checkFit(s,name) {
+  assert.equal(s.mode,'fit',name+': Fit Canvas active');
+  assert.deepEqual(s.backing,[720,1280,720,1280],name+': backing dimensions preserved');
+  assert.ok(s.board.width>0 && s.board.height>0,name+': visible paper');
+  assert.ok(approx(s.board.width/s.board.height,9/16,0.005),name+': 9:16 proportions');
+  assert.ok(s.board.x>=s.area.x-1,name+': left paper edge');
+  assert.ok(s.board.y>=s.area.y-1,name+': top paper edge');
+  assert.ok(s.board.x+s.board.width<=s.area.x+s.area.width+1,name+': right paper edge');
+  assert.ok(s.board.y+s.board.height<=s.area.y+s.area.height+1,name+': bottom paper edge');
+  assert.ok(s.bottomWidth<=180,name+': compact palette handle, not full-width');
+}
+(async()=>{
+  const browser=await chromium.launch({
+    headless:true,
+    args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']
+  });
+  try{
+    const page=await browser.newPage({viewport:{width:390,height:780},deviceScaleFactor:1,hasTouch:true,isMobile:true});
+    const errors=[];
+    page.on('pageerror',err=>errors.push(err.message));
+    await page.goto('http://127.0.0.1:8765/shell-v2.html',{waitUntil:'domcontentloaded',timeout:30000});
+    await page.waitForFunction(()=>!!window.__ZGEN_THREE_SHELL?.recalculatePaperFit,{timeout:12000});
+    await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
+
+    // Owner's 180-degree workspace switch swaps the two tool rails, NOT the paper.
+    // Check actual geometry and persistent control state, not just a button label.
+    await page.locator('#zshell-right .zshell-handle').click();
+    const railSwap=page.locator('#zshell-right-panel .zshell-rail-swap');
+    const railPositions=()=>page.evaluate(()=>{
+      const left=document.querySelector('#zshell-left .zshell-handle').getBoundingClientRect();
+      const right=document.querySelector('#zshell-right .zshell-handle').getBoundingClientRect();
+      const paper=document.getElementById('paint');
+      return {left:left.x,right:right.x,backing:[paper.width,paper.height],
+        swapped:document.querySelector('.viewport').classList.contains('zgen-rails-swapped')};
+    });
+    const railsBefore=await railPositions();
+    await railSwap.click();
+    const railsAfter=await railPositions();
+    assert.equal(railsAfter.swapped,!railsBefore.swapped,'180-degree switch changes workspace rail state');
+    assert.ok((railsBefore.left<railsBefore.right)!==(railsAfter.left<railsAfter.right),
+      '180-degree switch exchanges actual left/right rail geometry');
+    assert.deepEqual(railsAfter.backing,[720,1280],'rail switch preserves painting backing pixels');
+    assert.equal(await railSwap.getAttribute('aria-pressed'),String(railsAfter.swapped),
+      'rail swap accessibility state follows physical position');
+    await railSwap.click();
+    assert.equal((await railPositions()).swapped,railsBefore.swapped,
+      'second switch restores initial rail orientation');
+    await page.locator('#zshell-right .zshell-close').click();
+    console.log('PASS: 180-degree rail switch exchanges real geometry, reverses, preserves 720x1280 paper');
+
+    // Seed a real tracing-layer pixel so layout changes must not wipe it.
+    const initialPixel=await page.evaluate(()=>{
+      const canvas=document.getElementById('reference');
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      ctx.fillStyle='rgba(127,37,211,1)';
+      ctx.fillRect(11,13,1,1);
+      return Array.from(ctx.getImageData(11,13,1,1).data);
+    });
+    assert.equal(initialPixel[3],255,'tracing test pixel visible');
+
+    for (const x of fixtures) {
+      await page.setViewportSize({width:x.width,height:x.height});
+      await page.waitForTimeout(120);
+      await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
+      const s=await snapshot(page);
+      checkFit(s,x.name);
+      await page.screenshot({path:path.join(outDir,x.name+'.png')});
+      console.log('PASS '+x.name+': paper '+Math.round(s.board.width)+'x'+Math.round(s.board.height)+' in '+Math.round(s.area.width)+'x'+Math.round(s.area.height));
+    }
+
+    const before=await snapshot(page);
+    await page.locator('#zshell-bottom .zshell-handle').click();
+    assert.equal(await page.locator('#zshell-bottom-panel').isVisible(),true,'bottom overlays the paper');
+    const withPalette=await snapshot(page);
+    assert.ok(approx(withPalette.board.width,before.board.width,1),'palette does not resize paper');
+    await page.locator('#zshell-right .zshell-handle').click();
+    assert.equal(await page.locator('#zshell-bottom-panel').isVisible(),false,'opening tools collapses other panel');
+
+    await page.locator('#zshell-right-panel .zshell-viewbar button').nth(1).click();
+    await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
+    const fill=await snapshot(page);
+    assert.equal(fill.mode,'fill','Fill Width is explicit');
+    assert.ok(approx(fill.board.width,fill.area.width-10,1),'Fill Width consumes available width');
+    await page.locator('#zshell-right .zshell-handle').click();
+    await page.locator('#zshell-right-panel .zshell-viewbar button').first().click();
+    await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
+    checkFit(await snapshot(page),'fit-return');
+
+
+    // Real original engine wiring: only THREE contextual sliders at once.
+    await page.setViewportSize({width:390,height:780});
+    await page.waitForTimeout(120);
+    await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
+    await page.locator('.zshell-adjust-handle').click();
+    assert.equal(await page.locator('#zshell-adjust-panel input[type=range]').count(),3,'watercolor: exactly three sliders');
+    assert.deepEqual(await page.locator('#zshell-adjust-panel input[data-setting]').evaluateAll(
+      nodes=>nodes.map(x=>x.dataset.setting)),['size','water','pigment'],'watercolor: contextual fields');
+    assert.equal(await page.locator('#zshell-adjust-panel [data-size-preset]').count(),5,'XS to XL buttons');
+    await page.locator('#zshell-adjust-panel [data-size-preset=XL]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),80,'XL changes real engine size');
+    await page.locator('#zshell-adjust-panel [data-size-preset=XS]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),3,'XS changes real engine size');
+    await page.locator('#zshell-adjust-panel input[data-setting=water]').evaluate(slider=>{
+      slider.value='24';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().water),24,'water slider changes engine');
+    await page.locator('#zshell-adjust-panel input[data-setting=pigment]').evaluate(slider=>{
+      slider.value='31';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+    await page.locator('#zshell-left .zshell-handle').click();
+    await page.locator('#painting-rail button[data-act=water]').click();
+    assert.equal(await page.locator('#r-pigment').inputValue(),'31','pigment slider reaches original native engine');
+    await page.locator('#drawer button[data-act=close]').click();
+
+    // Switch to actual existing 2B Graphite; the same adjustments become
+    // Size, Mark Strength (opacity), Lazy, rather than watercolor controls.
+    await page.locator('#zshell-left .zshell-handle').click();
+    await page.locator('#zshell-left-panel button[data-brush=graphite]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().brush),'graphite','actual graphite brush selected');
+    await page.locator('.zshell-adjust-handle').click();
+    assert.deepEqual(await page.locator('#zshell-adjust-panel input[data-setting]').evaluateAll(
+      nodes=>nodes.map(x=>x.dataset.setting)),['size','opacity','lazy'],'graphite: three distinct fields');
+    await page.locator('#zshell-adjust-panel input[data-setting=opacity]').evaluate(slider=>{
+      slider.value='54';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.locator('#zshell-adjust-panel input[data-setting=lazy]').evaluate(slider=>{
+      slider.value='0';slider.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.locator('#zshell-adjust-panel [data-size-preset=XS]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),3,'graphite XS size is real');
+    await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+
+    const rect=await page.locator('#board').boundingBox();
+    assert.ok(rect && rect.width>100,'paper visible for true graphite marks');
+    const drawAt=async fractionY=>{
+      const startX=rect.x+rect.width*.40,endX=rect.x+rect.width*.60;
+      const y=rect.y+rect.height*fractionY;
+      await page.mouse.move(startX,y);
+      await page.mouse.down();
+      await page.mouse.move(endX,y,{steps:14});
+      await page.mouse.up();
+    };
+    await drawAt(.26);
+    await page.locator('.zshell-adjust-handle').click();
+    await page.locator('#zshell-adjust-panel [data-size-preset=XL]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().size),80,'graphite XL changes real engine');
+    await page.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+    await drawAt(.74);
+    const marks=await page.evaluate(()=>{
+      const c=document.getElementById('paint');
+      const ctx=c.getContext('2d',{willReadFrequently:true});
+      function pixels(fy){
+        const box=ctx.getImageData(230,Math.round(1280*fy)-110,260,220);
+        let marked=0;
+        for(let i=3;i<box.data.length;i+=4)if(box.data[i]>4)marked++;
+        return marked;
+      }
+      return {xs:pixels(.26),xl:pixels(.74)};
+    });
+    assert.ok(marks.xs>3,'XS graphite visibly marks actual canvas ('+marks.xs+')');
+    assert.ok(marks.xl>marks.xs*2,'XL graphite makes physically larger stroke: '+JSON.stringify(marks));
+    console.log('PASS: contextual 3 slider modes, XS/XL real size and 2B graphite pixel coverage '+JSON.stringify(marks));
+
+    // Artist regression: real Undo/Redo and exported PNG after resizing.
+    // Do not equate visible buttons with working history or save behavior.
+    const countPaintRegion=async fractionY=>page.evaluate(fy=>{
+      const c=document.getElementById('paint');
+      const ctx=c.getContext('2d',{willReadFrequently:true});
+      const box=ctx.getImageData(230,Math.round(1280*fy)-110,260,220);
+      let count=0;
+      for(let i=3;i<box.data.length;i+=4)if(box.data[i]>4)count++;
+      return count;
+    },fractionY);
+    const beforeUndo=await countPaintRegion(.74);
+    await page.locator('#zshell-right .zshell-handle').click();
+    await page.locator('#canvas-rail button[data-act=undo]').click();
+    await page.waitForTimeout(150);
+    const afterUndo=await countPaintRegion(.74);
+    assert.ok(afterUndo<beforeUndo*.4,
+      'real Undo removes most of XL graphite pixels: '+JSON.stringify({beforeUndo,afterUndo}));
+    await page.locator('#zshell-right .zshell-handle').click();
+    await page.locator('#canvas-rail button[data-act=redo]').click();
+    await page.waitForTimeout(150);
+    const afterRedo=await countPaintRegion(.74);
+    assert.ok(afterRedo>beforeUndo*.65,
+      'real Redo restores XL graphite pixels: '+JSON.stringify({beforeUndo,afterRedo}));
+    console.log('PASS: real graphite Undo/Redo pixels '+JSON.stringify({beforeUndo,afterUndo,afterRedo}));
+
+    // Save with the original tool; inspect actual downloaded PNG bytes and dimensions.
+    await page.locator('#zshell-right .zshell-handle').click();
+    const downloadReady=page.waitForEvent('download',{timeout:12000});
+    await page.locator('#zshell-right-panel .actions button[data-act=export]').click();
+    const download=await downloadReady;
+    const pngBytes=fs.readFileSync(await download.path());
+    assert.deepEqual([...pngBytes.subarray(0,8)],[137,80,78,71,13,10,26,10],
+      'real PNG magic header');
+    assert.equal(pngBytes.readUInt32BE(16),720,'PNG export width');
+    assert.equal(pngBytes.readUInt32BE(20),1280,'PNG export height');
+    assert.ok(pngBytes.length>3000,'PNG export has substantial content');
+    console.log('PASS: original PNG download valid 720x1280, '+pngBytes.length+' bytes');
+
+    // Rapid toggles must never navigate away or erase the drawing.
+    const beforeToggles=await countPaintRegion(.74);
+    for(let i=0;i<12;i++){
+      const side=i%2?'#zshell-left':'#zshell-right';
+      await page.locator(side+' .zshell-handle').click();
+      await page.locator(side+' .zshell-close').click();
+    }
+    assert.ok(page.url().endsWith('/shell-v2.html'),'docking controls never navigate away');
+    const afterToggles=await countPaintRegion(.74);
+    assert.equal(afterToggles,beforeToggles,'panel toggling never changes art pixels');
+    assert.equal(errors.length,0,'no uncaught runtime errors during artist regressions: '+errors.join(' | '));
+    console.log('PASS: 12 drawer cycles, same URL, unchanged pixels, no runtime exceptions');
+
+
+    const retainedPixel=await page.evaluate(()=>{
+      const canvas=document.getElementById('reference');
+      return Array.from(canvas.getContext('2d',{willReadFrequently:true}).getImageData(11,13,1,1).data);
+    });
+    assert.deepEqual(retainedPixel,initialPixel,'reference pixel preserved through 5 resizes and fit modes');
+    console.log('PASS: floating panel overlay, Fit Canvas/Fill Width, tracing pixel remains, no backing-canvas resize');
+    if(errors.length)console.log('Page runtime warnings (not evaluated as an engine PASS): '+errors.slice(0,5).join(' | '));
+    // Persistent native brush favorites: save/recall through real data-brush
+    // selection and survive reload. No synthetic paint engine substitute.
+    await page.locator('#zshell-left .zshell-handle').click();
+    const favoriteToggle=page.locator('#zshell-left-panel .zshell-fav-toggle');
+    await favoriteToggle.click();
+    assert.equal(await favoriteToggle.getAttribute('aria-pressed'),'true',
+      'current 2B graphite saved as favorite');
+    assert.equal(await page.locator('#zshell-left-panel .zshell-fav-list button[data-brush=graphite]').count(),1,
+      'favorite is a real native data-brush selector');
+    await page.locator('#drawing-rail button[data-brush=ink]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().brush),'ink',
+      'native Indian Ink remains available');
+    await page.locator('#zshell-left .zshell-handle').click();
+    await page.locator('#zshell-left-panel .zshell-fav-list button[data-brush=graphite]').click();
+    assert.equal(await page.evaluate(()=>window.__ZGEN_BETA_26.state().brush),'graphite',
+      'favorite recalls real 2B engine brush');
+
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>!!window.__ZGEN_BETA_26?.state && !!window.__ZGEN_THREE_SHELL);
+    await page.locator('#zshell-left .zshell-handle').click();
+    assert.equal(await page.locator('#zshell-left-panel .zshell-fav-list button[data-brush=graphite]').count(),1,
+      'favorite survives page refresh via localStorage');
+    console.log('PASS: native favorite save, real Ink→Graphite recall, survives reload');
+
+  } finally { await browser.close(); }
+})().catch(err=>{console.error(err.stack||err);process.exitCode=1;});

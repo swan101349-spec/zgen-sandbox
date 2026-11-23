@@ -46,10 +46,15 @@
 
 
 /* 22 Nov artist review: paper-first fit controls and compact half-pans. Layout only. */
+#app .viewport.zgen-paper-fit #board,
 #app .viewport.zgen-paper-fill #board{
-  width:calc(100% - 8px)!important;
+  width:var(--zgen-paper-width, 100%)!important;
+  height:var(--zgen-paper-height, auto)!important;
+  aspect-ratio:9/16!important;
   max-width:none!important;
+  max-height:none!important;
   min-width:0!important;
+  min-height:0!important;
 }
 .zshell-viewbar{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
@@ -123,4 +128,131 @@
   #app .drawer .pigments{
     grid-template-columns:repeat(auto-fill,minmax(32px,1fr))!important;
   }
+}
+
+
+/* 22 Nov owner-approved auto Fit Canvas: remove UI bulk without
+   changing 720x1280 paint backing, pointer events or art proportions. */
+.zshell.left .zshell-handle,.zshell.right .zshell-handle{
+  width:42px!important;
+  min-height:57px!important;
+  font-size:17px!important;
+}
+.zshell.left .zshell-handle small,.zshell.right .zshell-handle small{
+  font-size:10px!important;
+}
+.zshell.bottom{
+  left:50%!important;
+  right:auto!important;
+  width:min(174px,calc(100vw - 16px))!important;
+  transform:translateX(-50%);
+}
+.zshell.bottom .zshell-handle{
+  width:100%!important;
+  height:42px!important;
+  min-height:42px!important;
+  gap:5px!important;
+  font-size:14px!important;
+}
+.zshell.bottom .zshell-handle small{font-size:11px!important}
+.zshell.bottom .zshell-panel{
+  width:min(410px,calc(100vw - 18px))!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translateX(-50%);
+  bottom:47px!important;
+}
+#app .drawer .pigments{
+  grid-template-columns:repeat(auto-fill,minmax(31px,1fr))!important;
+  gap:3px!important;
+}
+#app .drawer .pigments button{
+  max-width:34px!important;
+  min-height:32px!important;
+  border-radius:8px!important;
+}
+
+/* 22 Nov owner requirement: compact top-left three-slider adjust dock.
+   Painting layer and original event handler remain unchanged. */
+#app .zshell-adjust-handle{
+  position:absolute;z-index:62;left:4px;top:4px;
+  width:42px;height:42px;padding:0;
+  background:linear-gradient(#234554,#112632);color:#fff0cc;
+  border:1.5px solid #d4b36e;border-radius:9px;
+  font:800 26px/1 system-ui;touch-action:manipulation;
+  box-shadow:0 2px 10px #0008;
+}
+#app .zshell-adjust-handle[aria-expanded=true]{
+  background:#f4cb75;color:#09151e;
+}
+#app .zshell-adjust-panel{
+  position:absolute;z-index:61;left:49px;top:4px;
+  width:min(266px,calc(100% - 56px));
+  max-height:min(68dvh,430px);overflow-y:auto;
+  border:1.5px solid #e2b96e;border-radius:11px;
+  background:#112735f8;color:#fff6e6;padding:8px;
+  box-shadow:0 8px 28px #000b;overscroll-behavior:contain;
+  touch-action:pan-y;
+}
+#app .zshell-adjust-panel[hidden]{display:none!important}
+#app .zshell-adjust-title{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:5px}
+#app .zshell-adjust-title strong{font-size:13px}
+#app .zshell-adjust-close{
+  min-height:34px;min-width:34px;border:1px solid #b99c61;
+  background:#304e5e;border-radius:8px;color:white;font-size:23px;
+}
+#app .zshell-adjust-row{
+  display:grid;grid-template-columns:1fr auto;gap:2px 6px;
+  color:#f7ead4;font-size:12px;font-weight:800;
+  padding:2px 2px 6px;margin:0;
+}
+#app .zshell-adjust-value{color:#fbdc91;font-variant-numeric:tabular-nums}
+#app .zshell-adjust-row input[type=range]{
+  grid-column:1/-1;min-height:28px;width:100%;margin:0;
+  accent-color:#f4c86b;touch-action:pan-x;
+}
+#app .zshell-size-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:5px 0}
+#app .zshell-size-presets button{
+  min-width:0;min-height:39px;font:800 12px system-ui;color:white;
+  background:#2c485a;border:1px solid #bda366;border-radius:7px;
+  padding:2px;touch-action:manipulation;
+}
+#app .zshell-size-presets button[aria-pressed=true]{
+  background:#f4cc79;color:#0d2230;border-color:#fff3c5;
+}
+#app .zshell-adjust-hint{margin:5px 2px 0;font-size:10px;color:#cadcdf}
+@media(max-height:450px){
+  #app .zshell-adjust-panel{max-height:80dvh}
+}
+
+/* Brush favorites: compact, stored locally; native data-brush selects engine. */
+.zshell-favorites{margin:2px 0 8px}
+.zshell-fav-toggle{
+  width:100%;min-height:39px;padding:5px 7px;
+  border:1px solid #d4b36e;background:#2b4857;
+  color:#ffe1a3;border-radius:8px;text-align:left;
+  font:750 12px/1.25 system-ui;touch-action:manipulation;
+}
+.zshell-fav-toggle[aria-pressed="true"]{background:#4b4129;color:#ffedbd}
+.zshell-fav-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:5px}
+.zshell-fav-list button{
+  min-width:0;min-height:38px;padding:5px 4px;
+  border:1px solid #a99259;border-radius:7px;background:#294454;
+  color:#fff3d8;font:700 11px/1.2 system-ui;touch-action:manipulation;
+}
+.zshell-fav-list small{grid-column:1/-1;color:#c3d3d5;font-size:11px}
+
+/* C5 reversible 180-degree rail layout: spatial positions only.
+   Existing paint pixels, actual rail DOM and 720x1280 backing stay untouched.
+   Higher specificity wins over initial .zshell.left/.right positioning. */
+#app .viewport.zgen-rails-swapped .zshell.left{left:auto!important;right:4px!important}
+#app .viewport.zgen-rails-swapped .zshell.right{right:auto!important;left:4px!important}
+#app .viewport.zgen-rails-swapped .zshell.left .zshell-panel{
+  left:auto!important;right:48px!important
+}
+#app .viewport.zgen-rails-swapped .zshell.right .zshell-panel{
+  right:auto!important;left:48px!important
+}
+#app .zshell-rail-swap[aria-pressed=true]{
+  background:#f4cc79!important;color:#0d2230!important;border-color:#fff3c5!important
 }
