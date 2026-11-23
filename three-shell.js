@@ -445,10 +445,11 @@
   });
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-brush]')){
-      // Native app registered its document click listener before this adapter.
-      // It has already selected the tool, so apply its remembered size NOW,
-      // not a frame later. This avoids an accidental oversized first stroke.
-      syncSelectedBrush();
+      // Original painter script is a deferred module and may register its
+      // document click handler AFTER this classic shell adapter. Microtasks
+      // run immediately after all handlers finish, avoiding both premature
+      // (wrong brush) reads and a requestAnimationFrame's oversized-stroke gap.
+      queueMicrotask(syncSelectedBrush);
     }
     // Opening another existing dock or native tool picker closes adjustments.
     if(event.target.closest('.zshell-handle,[data-act]') &&
