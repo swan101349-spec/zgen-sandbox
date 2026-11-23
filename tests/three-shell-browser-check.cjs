@@ -261,7 +261,10 @@ function checkFit(s,name) {
       try{
         await p.goto('http://127.0.0.1:8765/shell-v2.html',{waitUntil:'domcontentloaded'});
         await p.waitForFunction(()=>!!window.__ZGEN_BETA_26?.state && !!window.__ZGEN_THREE_SHELL);
-        if(medium==='ink')await p.locator('#drawing-rail button[data-brush=ink]').click();
+        if(medium==='ink'){
+          await p.locator('#zshell-left .zshell-handle').click();
+          await p.locator('#zshell-left-panel button[data-brush=ink]').click();
+        }
         assert.equal(await p.evaluate(()=>window.__ZGEN_BETA_26.state().brush),medium,
           medium+' selected real native brush');
         const sizes=[['XS',3],['S',10],['M',22],['L',45],['XL',80]];
