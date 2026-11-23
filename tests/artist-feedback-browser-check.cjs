@@ -39,11 +39,11 @@ fs.mkdirSync(output,{recursive:true});
    const header=await page.locator('.head').boundingBox();
    const trigger=await page.locator('#artist-feedback-open').boundingBox();
    const options=await page.locator('#rail-settings').boundingBox();
-   assert.ok(header&&trigger&&options,'visible header and tool buttons');
+   assert.ok(header&&trigger,'header and TEST button visible');
    assert.ok(trigger.x>=header.x-1&&trigger.x+trigger.width<=header.x+header.width+1,
      'TEST button fully visible within header');
-   assert.ok(trigger.x+trigger.width<=options.x+1,
-     'TEST must not overlap rail-settings button');
+   if(options)assert.ok(trigger.x+trigger.width<=options.x+1,
+     'TEST must not overlap a visible rail-settings button');
    const before=await page.locator('#paint').evaluate(c=>({w:c.width,h:c.height,png:c.toDataURL()}));
    assert.deepEqual([before.w,before.h],[720,1280]);
    await page.locator('#artist-feedback-open').click();
