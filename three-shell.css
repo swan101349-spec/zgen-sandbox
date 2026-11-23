@@ -241,3 +241,18 @@
   color:#fff3d8;font:700 11px/1.2 system-ui;touch-action:manipulation;
 }
 .zshell-fav-list small{grid-column:1/-1;color:#c3d3d5;font-size:11px}
+
+/* C5 reversible 180-degree rail layout: spatial positions only.
+   Existing paint pixels, actual rail DOM and 720x1280 backing stay untouched.
+   Higher specificity wins over initial .zshell.left/.right positioning. */
+#app .viewport.zgen-rails-swapped .zshell.left{left:auto!important;right:4px!important}
+#app .viewport.zgen-rails-swapped .zshell.right{right:auto!important;left:4px!important}
+#app .viewport.zgen-rails-swapped .zshell.left .zshell-panel{
+  left:auto!important;right:48px!important
+}
+#app .viewport.zgen-rails-swapped .zshell.right .zshell-panel{
+  right:auto!important;left:48px!important
+}
+#app .zshell-rail-swap[aria-pressed=true]{
+  background:#f4cc79!important;color:#0d2230!important;border-color:#fff3c5!important
+}
