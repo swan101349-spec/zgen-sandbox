@@ -7,7 +7,11 @@ function source(path){
   assert.ok(match, path+': painter source bundle present');
   return Buffer.from(match[1],'base64').toString('latin1');
 }
-const untouched=source('index.html');
+const crypto=require('node:crypto');
+const original=fs.readFileSync('original-engine.html');
+const originalGitBlob=crypto.createHash('sha1').update('blob '+original.length+'\0').update(original).digest('hex');
+assert.equal(originalGitBlob,'6442ad3869b3692878c4f49f0dce92f4ff001948','original artist painter file must match prior main Git blob');
+const untouched=source('original-engine.html');
 const adapted=source('shell-v2.html');
 const start=adapted.indexOf('window.__ZGEN_FILL_BRIDGE=');
 const end=adapted.indexOf('window.__ZGEN_BETA_26=',start);
