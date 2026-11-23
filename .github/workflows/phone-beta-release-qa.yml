@@ -5,6 +5,8 @@ on:
       - qa/current-phone-beta-release-20261123
     paths:
       - index.html
+      - original-engine.html
+      - tests/bounded-fill-source-integrity.cjs
       - shell-v2.html
       - bounded-fill.js
       - bounded-fill.css
@@ -15,6 +17,8 @@ on:
   pull_request:
     paths:
       - index.html
+      - original-engine.html
+      - tests/bounded-fill-source-integrity.cjs
       - shell-v2.html
       - bounded-fill.js
       - bounded-fill.css
