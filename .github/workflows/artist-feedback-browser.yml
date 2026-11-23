@@ -1,0 +1,58 @@
+name: Existing beta | Artist feedback source + tablet Chromium
+on:
+  push:
+    branches:
+      - feat/artist-feedback-in-existing-beta-20261123
+    paths:
+      - index.html
+      - shell-v2.html
+      - artist-feedback.js
+      - artist-feedback.css
+      - tests/artist-feedback-browser-check.cjs
+      - .github/workflows/artist-feedback-browser.yml
+  pull_request:
+    paths:
+      - index.html
+      - shell-v2.html
+      - artist-feedback.js
+      - artist-feedback.css
+      - tests/artist-feedback-browser-check.cjs
+      - .github/workflows/artist-feedback-browser.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-painter-and-feedback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact PR branch head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse local-only feedback and test suite
+        run: |
+          node --check artist-feedback.js
+          node --check tests/artist-feedback-browser-check.cjs
+      - name: Install isolated Chromium only for test
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Native painter identity, actual browser drawer and device geometry
+        run: |
+          python3 -m http.server 8772 --bind 127.0.0.1 --directory . > /tmp/artist-feedback-beta.log 2>&1 &
+          node tests/artist-feedback-browser-check.cjs
+      - name: Store four viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-beta-feedback-qa
+          path: artist-feedback-browser-qa/
+          if-no-files-found: ignore
