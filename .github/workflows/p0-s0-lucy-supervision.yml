@@ -1,0 +1,42 @@
+name: S0 Lucy P0 Source Supervisor (read-only)
+on:
+  push:
+    branches:
+      - qa/p0-s0-lucy-readonly-20261123
+  pull_request:
+    paths:
+      - three-shell.js
+      - three-shell.css
+      - tests/three-shell-browser-check.cjs
+      - tests/p0-supervisor-readonly.cjs
+      - .github/workflows/p0-s0-lucy-supervision.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s0-lucy-source-scope:
+    name: Independent S0 Lucy deterministic scope review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact reviewed head and its baseline
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Install available Node runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Strict source pin and scoped agent review
+        run: node tests/p0-supervisor-readonly.cjs
+      - name: Preserve real supervisor receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-s0-lucy-source-scope-receipt
+          path: supervisor-evidence/p0-s0-lucy-receipt.json
+          if-no-files-found: warn
+          retention-days: 14
