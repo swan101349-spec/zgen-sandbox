@@ -54,6 +54,32 @@ function checkFit(s,name) {
     await page.waitForFunction(()=>!!window.__ZGEN_THREE_SHELL?.recalculatePaperFit,{timeout:12000});
     await page.evaluate(()=>window.__ZGEN_THREE_SHELL.recalculatePaperFit());
 
+    // Owner's 180-degree workspace switch swaps the two tool rails, NOT the paper.
+    // Check actual geometry and persistent control state, not just a button label.
+    await page.locator('#zshell-right .zshell-handle').click();
+    const railSwap=page.locator('#zshell-right-panel .zshell-rail-swap');
+    const railPositions=()=>page.evaluate(()=>{
+      const left=document.querySelector('#zshell-left .zshell-handle').getBoundingClientRect();
+      const right=document.querySelector('#zshell-right .zshell-handle').getBoundingClientRect();
+      const paper=document.getElementById('paint');
+      return {left:left.x,right:right.x,backing:[paper.width,paper.height],
+        swapped:document.querySelector('.viewport').classList.contains('zgen-rails-swapped')};
+    });
+    const railsBefore=await railPositions();
+    await railSwap.click();
+    const railsAfter=await railPositions();
+    assert.equal(railsAfter.swapped,!railsBefore.swapped,'180-degree switch changes workspace rail state');
+    assert.ok((railsBefore.left<railsBefore.right)!==(railsAfter.left<railsAfter.right),
+      '180-degree switch exchanges actual left/right rail geometry');
+    assert.deepEqual(railsAfter.backing,[720,1280],'rail switch preserves painting backing pixels');
+    assert.equal(await railSwap.getAttribute('aria-pressed'),String(railsAfter.swapped),
+      'rail swap accessibility state follows physical position');
+    await railSwap.click();
+    assert.equal((await railPositions()).swapped,railsBefore.swapped,
+      'second switch restores initial rail orientation');
+    await page.locator('#zshell-right .zshell-close').click();
+    console.log('PASS: 180-degree rail switch exchanges real geometry, reverses, preserves 720x1280 paper');
+
     // Seed a real tracing-layer pixel so layout changes must not wipe it.
     const initialPixel=await page.evaluate(()=>{
       const canvas=document.getElementById('reference');
