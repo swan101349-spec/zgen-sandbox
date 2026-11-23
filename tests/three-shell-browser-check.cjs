@@ -251,5 +251,60 @@ function checkFit(s,name) {
       'favorite survives page refresh via localStorage');
     console.log('PASS: native favorite save, real Ink→Graphite recall, survives reload');
 
+
+    // P0 size acceptance: all five presets must affect the ACTUAL engine, not
+    // only a label. Two brush families (fine Indian Ink and Round watercolor)
+    // must deposit distinct real 720x1280 paint pixels, including tiny XS.
+    // Graphite XS/XL pixel test above remains separately authoritative.
+    for(const medium of ['ink','round']){
+      const p=await browser.newPage({viewport:{width:390,height:780},hasTouch:true,isMobile:true});
+      try{
+        await p.goto('http://127.0.0.1:8765/shell-v2.html',{waitUntil:'domcontentloaded'});
+        await p.waitForFunction(()=>!!window.__ZGEN_BETA_26?.state && !!window.__ZGEN_THREE_SHELL);
+        if(medium==='ink'){
+          await p.locator('#zshell-left .zshell-handle').click();
+          await p.locator('#zshell-left-panel button[data-brush=ink]').click();
+        }
+        assert.equal(await p.evaluate(()=>window.__ZGEN_BETA_26.state().brush),medium,
+          medium+' selected real native brush');
+        const sizes=[['XS',3],['S',10],['M',22],['L',45],['XL',80]];
+        const rows=[.14,.32,.50,.68,.86];
+        const areaProof=[];
+        for(let n=0;n<sizes.length;n++){
+          const [name,value]=sizes[n];
+          await p.locator('.zshell-adjust-handle').click();
+          const button=p.locator('#zshell-adjust-panel [data-size-preset='+name+']');
+          await button.click();
+          assert.equal(await p.evaluate(()=>window.__ZGEN_BETA_26.state().size),value,
+            medium+' '+name+' must change native size, not just UI');
+          await p.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+          const rect=await p.locator('#board').boundingBox();
+          assert.ok(rect&&rect.width>100,medium+' paper visible');
+          const y=rect.y+rect.height*rows[n];
+          await p.mouse.move(rect.x+rect.width*.40,y);
+          await p.mouse.down();
+          await p.mouse.move(rect.x+rect.width*.60,y,{steps:16});
+          await p.mouse.up();
+          await p.waitForTimeout(180);
+          const count=await p.evaluate(fy=>{
+            const canvas=document.querySelector('#paint');
+            const ctx=canvas.getContext('2d',{willReadFrequently:true});
+            const yy=Math.max(0,Math.round(fy*1280)-80);
+            const data=ctx.getImageData(210,yy,300,160).data;
+            let marked=0;
+            for(let i=3;i<data.length;i+=4)if(data[i]>4)marked++;
+            return marked;
+          },rows[n]);
+          areaProof.push({size:name,value,markedPixels:count});
+        }
+        assert.ok(areaProof[0].markedPixels>3,medium+' XS must actually leave a visible fine mark: '+JSON.stringify(areaProof));
+        assert.ok(areaProof[4].markedPixels>areaProof[0].markedPixels*1.8,
+          medium+' XL must materially exceed XS physical mark footprint: '+JSON.stringify(areaProof));
+        assert.ok(areaProof.every(p=>p.markedPixels>3),
+          medium+' every size must paint actual pixels: '+JSON.stringify(areaProof));
+        console.log('P0_REAL_BRUSH_SIZE '+JSON.stringify({medium,areaProof}));
+      }finally{await p.close();}
+    }
+
   } finally { await browser.close(); }
 })().catch(err=>{console.error(err.stack||err);process.exitCode=1;});
