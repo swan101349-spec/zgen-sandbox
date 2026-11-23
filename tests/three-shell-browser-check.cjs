@@ -267,6 +267,31 @@ function checkFit(s,name) {
         }
         assert.equal(await p.evaluate(()=>window.__ZGEN_BETA_26.state().brush),medium,
           medium+' selected real native brush');
+        const firstSize=await p.evaluate(()=>window.__ZGEN_BETA_26.state().size);
+        if(medium==='ink')
+          assert.equal(firstSize,3,'Indian Ink must start at practical fine XS, not inherited M');
+        await p.locator('.zshell-adjust-handle').click();
+        assert.equal(await p.locator('#zshell-adjust-panel [data-size-preset]').count(),5,
+          'five native quick-size buttons in every real mark-making tool');
+        assert.equal(await p.locator('#zshell-adjust-panel .zshell-advanced').getAttribute('open'),null,
+          'technical sliders start collapsed; five simple size buttons are first');
+        await p.locator('#zshell-adjust-panel .zshell-adjust-close').click();
+        if(medium==='round'){
+          // Round is deposited into the native WebGL C4 wet canvas, not #paint.
+          // Compare the *same actual GPU canvas* against its clean pre-stroke
+          // pixels instead of falsely reporting zero on the 2D dry layer.
+          await p.waitForTimeout(300);
+          await p.evaluate(()=>{
+            const wet=document.querySelector('#c4-wet');
+            if(!wet||!wet.getContext('webgl2'))
+              throw new Error('Original WebGL wet surface not found');
+            const copy=document.createElement('canvas');
+            copy.width=720;copy.height=1280;
+            const ctx=copy.getContext('2d',{willReadFrequently:true});
+            ctx.drawImage(wet,0,0);
+            window.__p0WetInitial=ctx.getImageData(0,0,720,1280).data;
+          });
+        }
         const sizes=[['XS',3],['S',10],['M',22],['L',45],['XL',80]];
         const rows=[.14,.32,.50,.68,.86];
         const areaProof=[];
@@ -286,15 +311,27 @@ function checkFit(s,name) {
           await p.mouse.move(rect.x+rect.width*.60,y,{steps:16});
           await p.mouse.up();
           await p.waitForTimeout(180);
-          const count=await p.evaluate(fy=>{
-            const canvas=document.querySelector('#paint');
-            const ctx=canvas.getContext('2d',{willReadFrequently:true});
+          const count=await p.evaluate(({fy,wetMode})=>{
+            const canvas=document.querySelector(wetMode?'#c4-wet':'#paint');
+            const ctx=wetMode?(()=>{const copy=document.createElement('canvas');
+              copy.width=720;copy.height=1280;const c=copy.getContext('2d',{willReadFrequently:true});
+              c.drawImage(canvas,0,0);return c;})():canvas.getContext('2d',{willReadFrequently:true});
             const yy=Math.max(0,Math.round(fy*1280)-80);
             const data=ctx.getImageData(210,yy,300,160).data;
             let marked=0;
-            for(let i=3;i<data.length;i+=4)if(data[i]>4)marked++;
+            if(wetMode){
+              const base=window.__p0WetInitial;
+              for(let y=0;y<160;y++)for(let x=0;x<300;x++){
+                const a=(y*300+x)*4,b=((yy+y)*720+210+x)*4;
+                const change=Math.abs(data[a]-base[b])+Math.abs(data[a+1]-base[b+1])+
+                  Math.abs(data[a+2]-base[b+2])+Math.abs(data[a+3]-base[b+3]);
+                if(change>22)marked++;
+              }
+            }else{
+              for(let i=3;i<data.length;i+=4)if(data[i]>4)marked++;
+            }
             return marked;
-          },rows[n]);
+          },{fy:rows[n],wetMode:medium==='round'});
           areaProof.push({size:name,value,markedPixels:count});
         }
         assert.ok(areaProof[0].markedPixels>3,medium+' XS must actually leave a visible fine mark: '+JSON.stringify(areaProof));
@@ -303,6 +340,37 @@ function checkFit(s,name) {
         assert.ok(areaProof.every(p=>p.markedPixels>3),
           medium+' every size must paint actual pixels: '+JSON.stringify(areaProof));
         console.log('P0_REAL_BRUSH_SIZE '+JSON.stringify({medium,areaProof}));
+        // One tap at any moment, deterministic commands for future Van Gogh voice.
+        const api=await p.evaluate(()=>{
+          const controls=window.__ZGEN_BRUSH_CONTROLS;
+          const before=controls.brush;
+          const changed=controls.setPreset('XS');
+          const xs=window.__ZGEN_BETA_26.state().size;
+          const stepped=controls.stepSize(1);
+          const small=window.__ZGEN_BETA_26.state().size;
+          return {before,changed,xs,stepped,small};
+        });
+        assert.deepEqual({changed:api.changed,xs:api.xs,stepped:api.stepped,small:api.small},
+          {changed:true,xs:3,stepped:true,small:10},medium+' voice-ready tap size must drive native drawing');
+        // Tool-specific size retained when a different brush uses its own default.
+        await p.locator('#zshell-left .zshell-handle').click();
+        await p.locator('#zshell-left-panel button[data-brush=graphite]').click();
+        await p.waitForFunction(()=>window.__ZGEN_BRUSH_CONTROLS?.brush==='graphite');
+        assert.equal(await p.evaluate(()=>window.__ZGEN_BETA_26.state().size),3,
+          '2B Graphite starts at a thin XS regardless of previous brush');
+        if(medium==='ink'){
+          await p.locator('#zshell-left .zshell-handle').click();
+          await p.locator('#zshell-left-panel button[data-brush=ink]').click();
+        }else{
+          await p.locator('#zshell-bottom .zshell-handle').click();
+          await p.locator('#zshell-bottom-panel button[data-act=brush]').click();
+          await p.locator('#drawer button[data-brush=round]').click();
+        }
+        await p.waitForFunction(key=>window.__ZGEN_BRUSH_CONTROLS?.brush===key,medium);
+        assert.equal(await p.evaluate(()=>window.__ZGEN_BETA_26.state().size),10,
+          medium+' remembers its last adjusted size when selected again');
+        console.log('P0_PER_TOOL_SIZE_MEMORY '+JSON.stringify({medium,api,graphite:3,restored:10}));
+
       }finally{await p.close();}
     }
 
