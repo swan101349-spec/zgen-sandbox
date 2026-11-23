@@ -12,7 +12,9 @@ const fs=require('node:fs');
   const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   try{
     const out=[];
-    for(const cfg of [{width:390,height:844},{width:853,height:533}]){
+    // Mobile-first phone portrait, tablet portrait, and landscape responsive browser checks.
+    // Physical artist acceptance remains Galaxy Tab S9 finger + S Pen only.
+    for(const cfg of [{width:390,height:844},{width:800,height:1280},{width:853,height:533}]){
       const page=await browser.newPage({viewport:cfg,hasTouch:true,isMobile:true});
       const errors=[],downloads=[];page.on('pageerror',e=>errors.push(e.message));
       page.on('download',d=>downloads.push(d.suggestedFilename()));
@@ -70,6 +72,6 @@ const fs=require('node:fs');
       await page.close();
     }
     console.log('PHONE_BETA_ROOT_EVIDENCE '+JSON.stringify(out));
-    console.log('PHONE BETA ROOT GATE PASS. Physical OPPO/Tab S9 owner QA still required.');
+    console.log('PHONE BETA ROOT GATE PASS. Physical Galaxy Tab S9 finger and S Pen owner QA still required; OPPO is optional, not a gate.');
   }finally{await browser.close();}
 })().catch(e=>{console.error('PHONE BETA ROOT GATE FAIL',e);process.exitCode=1});
