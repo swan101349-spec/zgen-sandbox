@@ -1,0 +1,229 @@
+/* Compact owner feedback control, separate from native painting and pencil engine. */
+#app .artist-feedback-open {
+  flex:0 0 46px;
+  width:46px;
+  height:46px;
+  min-width:46px;
+  margin-left:auto;
+  margin-right:5px;
+  padding:0 2px;
+  border:2px solid #f3cf78;
+  border-radius:9px;
+  background:#122b3a;
+  color:#fff2c6;
+  font:800 13px system-ui,-apple-system,Arial,sans-serif;
+  letter-spacing:.02em;
+  touch-action:manipulation;
+}
+#app .artist-feedback-open:focus-visible,
+#app .artist-feedback-panel button:focus-visible,
+#app .artist-feedback-panel textarea:focus-visible {
+  outline:3px solid white;
+  outline-offset:2px;
+}
+#app .artist-feedback-backdrop {
+  position:fixed;
+  inset:0;
+  z-index:2200;
+  background:#0009;
+}
+#app .artist-feedback-panel {
+  position:fixed;
+  inset-block:0;
+  right:0;
+  width:min(385px,94vw);
+  max-height:100dvh;
+  z-index:2201;
+  display:flex;
+  flex-direction:column;
+  border-left:2px solid #ebc979;
+  background:#122638;
+  color:#fff8e9;
+  box-shadow:-8px 0 40px #000c;
+  font:14px/1.4 system-ui,-apple-system,Arial,sans-serif;
+  overscroll-behavior:contain;
+}
+#app .artist-feedback-backdrop[hidden],
+#app .artist-feedback-panel[hidden] {
+  display:none!important;
+}
+#app .artist-feedback-head {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 13px;
+  background:#071b29;
+  border-bottom:1px solid #8b7954;
+}
+#app .artist-feedback-heading strong {
+  display:block;
+  font-size:17px;
+  line-height:1.2;
+}
+#app .artist-feedback-heading small {
+  display:block;
+  margin-top:3px;
+  font-size:12px;
+  color:#ead2a2;
+}
+#app .artist-feedback-close {
+  min-width:44px;
+  min-height:44px;
+  border:1px solid #d8bd7f;
+  border-radius:8px;
+  background:#263f52;
+  color:white;
+  font-size:27px;
+  cursor:pointer;
+}
+#app .artist-feedback-content {
+  flex:1;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:12px 14px calc(18px + env(safe-area-inset-bottom));
+  scrollbar-width:thin;
+}
+#app .artist-feedback-intro {
+  font-size:13px;
+  line-height:1.45;
+  margin:0 0 10px;
+}
+#app .artist-feedback-progress {
+  padding:8px 10px;
+  border:1px solid #718995;
+  border-radius:7px;
+  background:#223e4e;
+  color:#fff0c0;
+  font-size:13px;
+  font-weight:800;
+  margin:0 0 10px;
+}
+#app .artist-feedback-section {
+  margin:10px 0 15px;
+}
+#app .artist-feedback-section h2,
+#app .artist-feedback-future summary {
+  margin:0 0 8px;
+  font-size:15px;
+  font-weight:850;
+  color:#ffe2a0;
+}
+#app .artist-feedback-future summary {
+  padding:10px 2px;
+  cursor:pointer;
+  border-bottom:1px solid #8d8065;
+}
+#app .artist-feedback-item {
+  padding:11px 0;
+  border-bottom:1px solid #486076;
+}
+#app .artist-feedback-name {
+  font-size:14px;
+  font-weight:800;
+  color:#fff8e6;
+}
+#app .artist-feedback-detail {
+  font-size:12px;
+  line-height:1.4;
+  color:#dce8ea;
+  margin:3px 0 8px;
+}
+#app .artist-feedback-choices {
+  display:flex;
+  gap:5px;
+}
+#app .artist-feedback-choice {
+  flex:1;
+  min-width:0;
+  min-height:42px;
+  padding:4px 2px;
+  border:1px solid #c8ced0;
+  border-radius:7px;
+  background:#2c4253;
+  color:white;
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+#app .artist-feedback-choice[aria-pressed=true][data-vote=PASS] {
+  background:#0e6549;
+  border-color:#c6ffe7;
+}
+#app .artist-feedback-choice[aria-pressed=true][data-vote=FAIL] {
+  background:#8c2735;
+  border-color:#ffc8ce;
+}
+#app .artist-feedback-choice[aria-pressed=true][data-vote="NOT TESTED"] {
+  background:#c9af78;
+  color:#152536;
+  border-color:#fff0c0;
+}
+#app .artist-feedback-pending {
+  padding-left:19px;
+  margin:6px 0 11px;
+  color:#dce5e7;
+  font-size:12px;
+  line-height:1.5;
+}
+#app .artist-feedback-pending li {
+  padding:2px 0;
+}
+#app .artist-feedback-label {
+  display:block;
+  margin:15px 0 8px;
+  font-size:14px;
+  font-weight:800;
+  color:#ffe6af;
+}
+#app .artist-feedback-notes {
+  display:block;
+  width:100%;
+  min-height:94px;
+  resize:vertical;
+  border:2px solid #e5cf9f;
+  border-radius:9px;
+  background:#edf4f3;
+  color:#132739;
+  padding:10px;
+  font-size:15px;
+}
+#app .artist-feedback-copy {
+  display:block;
+  width:100%;
+  min-height:48px;
+  margin-top:12px;
+  border:2px solid #fff1c0;
+  border-radius:9px;
+  color:#17293b;
+  background:#f2d587;
+  font-weight:850;
+  font-size:15px;
+  cursor:pointer;
+}
+#app .artist-feedback-copy-status {
+  font-size:12px;
+  color:#fce4b0;
+  min-height:18px;
+  margin:7px 0;
+}
+#app .artist-feedback-footnote {
+  font-size:11px;
+  color:#bcd5df;
+  padding-bottom:8px;
+}
+@media(max-width:365px) {
+  #app .artist-feedback-open {
+    flex-basis:42px;
+    min-width:42px;
+    width:42px;
+    height:42px;
+    margin-right:3px;
+    font-size:11px;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  #app .artist-feedback-panel {transition:none}
+}
