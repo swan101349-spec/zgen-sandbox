@@ -155,6 +155,18 @@
   lyricalLead.textContent='✎ Lyrical Pencil #1 · pressure flare';
   lyricalLead.setAttribute('aria-label','Select Lyrical Pencil number one, pressure and tilt expressive graphite');
   left.panel.append(lyricalLead);
+  // First native recovered atmospheric shader: the same Lyrical C1 input,
+  // artwork snapshot, graphite palette, Undo/Redo and export. No faux ★ wet.
+  const scrubLead=document.createElement('button');
+  scrubLead.type='button';
+  scrubLead.className='zshell-lyrical-lead';
+  scrubLead.textContent='✎ Scrub Shader · dry texture';
+  scrubLead.setAttribute('aria-label','Select dry Scrub shader pencil');
+  scrubLead.addEventListener('click',()=>{
+    lyricalLead.click(); // invokes the protected ORIGINAL brush selector
+    window.__ZGEN_LYRICAL_ONE?.configure({mode:'scrub'});
+  });
+  left.panel.append(scrubLead);
 
   // Favorites are a shell feature only. Clicking a favorite uses the real
   // existing document-level data-brush handler, not a replacement painter.
@@ -458,7 +470,7 @@
       const fields=[
         ['grade','Grade',['2H','H','HB','B','2B','4B','6B','8B']],
         ['size','Point',['xs','fine','standard','wide']],
-        ['mode','Line style',['graphite','harmony','sketchy','shader']]
+        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub']]
       ];
       for(const [name,label,values] of fields){
         const wrap=document.createElement('label');
