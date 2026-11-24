@@ -1,0 +1,47 @@
+name: Lyrical 1 | Sketchy + Harmony expressive native modes
+on:
+  push:
+    branches: ['qa/lyrical1-harmony-sketchy-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-lyrical-variants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head and protected original painter and cropped artwork
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check 1f3ae66c6aa6cda1faa1e523e3838c7eec84474a HEAD
+          node --check studio-recovery-20261124/lyrical-pencil-one.js
+          node --check tests/native-lyrical-sketchy-harmony-browser-check.cjs
+          node tests/native-lyrical-sketchy-harmony-source-check.cjs
+      - name: Install real Chromium painting test browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Real Sketchy, Harmony, graphite pressure waves and native Undo/Redo + artwork reload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-sketchy-harmony.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-lyrical-sketchy-harmony-browser-check.cjs
+          node tests/native-lyrical1-pressure-flare-browser-check.cjs
