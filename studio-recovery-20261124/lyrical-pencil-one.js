@@ -93,10 +93,30 @@ function render(ctx,a,b,prior,now,tangent,bend){
   }
   // The user's original four procedural language modes; graphite is default.
   if(opts.mode==='sketchy'){
-    ctx.globalAlpha=now.alpha*.15;ctx.lineWidth=Math.max(.45,now.core*.22);
-    ctx.beginPath();ctx.moveTo(a.x+nx*2,a.y+ny*2);
-    ctx.quadraticCurveTo((a.x+b.x)*.5-nx*3,(a.y+b.y)*.5-ny*3,b.x+nx*2,b.y+ny*2);
-    ctx.stroke();lastMetrics.marks++;
+    // Pressure-responsive graphite fragments that run along the SAME gesture.
+    // Alternating offset strokes give the hand-drawn broken-pencil character.
+    const rhythm=(stroke?.points.length||0)+Math.round(bend*8);
+    const lift=(rhythm%9===4);
+    const side=1.5+now.flare*.14;
+    if(!lift){
+      ctx.globalAlpha=clamp(now.alpha*(.10+.17*now.pressure),.015,.32);
+      ctx.lineWidth=Math.max(.4,now.core*(.11+.13*now.pressure));
+      ctx.beginPath();
+      ctx.moveTo(a.x+nx*side,a.y+ny*side);
+      ctx.quadraticCurveTo((a.x+b.x)*.5-nx*side*.9,
+        (a.y+b.y)*.5-ny*side*.9,b.x+nx*side*.65,b.y+ny*side*.65);
+      ctx.stroke();lastMetrics.marks++;
+    }
+    // Small lifted graphite crosshatches follow the curvature of a strong
+    // turn. They diminish when the pen returns to a quiet/light gesture.
+    if(bend>.12&&now.pressure>.24&&rhythm%3!==1){
+      const radius=Math.min(7,now.flare*.16+now.core*.28);
+      const mid={x:(a.x+b.x)*.5,y:(a.y+b.y)*.5};
+      ctx.globalAlpha=now.alpha*.12*now.pressure;ctx.lineWidth=.48;
+      ctx.beginPath();ctx.moveTo(mid.x-nx*radius,mid.y-ny*radius);
+      ctx.lineTo(mid.x+nx*radius,mid.y+ny*radius);
+      ctx.stroke();lastMetrics.marks++;
+    }
   }else if(opts.mode==='shader'){
     const count=Math.min(6,Math.ceil(now.pressure*5));
     ctx.globalAlpha=now.alpha*.19;ctx.lineWidth=.55;
@@ -107,12 +127,22 @@ function render(ctx,a,b,prior,now,tangent,bend){
       lastMetrics.marks++;
     }
   }else if(opts.mode==='harmony'&&stroke?.points.length>5){
-    const anchor=stroke.points[Math.max(0,stroke.points.length-5)];
-    const dist=Math.hypot(b.x-anchor.x,b.y-anchor.y);
-    if(dist>8&&dist<90){
-      ctx.globalAlpha=now.alpha*.12;ctx.lineWidth=.5;
-      ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(anchor.x,anchor.y);ctx.stroke();
-      lastMetrics.marks++;
+    // Fine chord lines connect previous notes on the artist's own path.
+    // The short and long offsets respond to loop spacing and pressure;
+    // they never become an independent canvas or a separate pointer owner.
+    const history=stroke.points;
+    for(const lag of [5,11]){
+      if(history.length<=lag)continue;
+      const anchor=history[history.length-1-lag];
+      const dist=Math.hypot(b.x-anchor.x,b.y-anchor.y);
+      if(dist<7||dist>132)continue;
+      const strength=clamp(now.alpha*(.08+.13*now.pressure),.009,.19);
+      ctx.globalAlpha=lag===11?strength*.65:strength;
+      ctx.lineWidth=lag===11?.42:.55;
+      ctx.beginPath();ctx.moveTo(b.x,b.y);
+      ctx.quadraticCurveTo((b.x+anchor.x)*.5+nx*bend*3.5,
+        (b.y+anchor.y)*.5+ny*bend*3.5,anchor.x,anchor.y);
+      ctx.stroke();lastMetrics.marks++;
     }
   }
   ctx.restore();
