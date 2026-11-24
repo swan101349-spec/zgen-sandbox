@@ -1,0 +1,183 @@
+:root{--space:#07121c;--stage:#182c3a;--panel:#10212e;--paper:#f9f1e1;--gold:#f6c54b;--coral:#ec6756;--teal:#70cabf;--line:#c59639;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}*{box-sizing:border-box}html,body{background:var(--space);color:#fff6e9;width:100%;height:100%;margin:0;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}button,select,input{font:inherit}button{cursor:pointer;touch-action:manipulation}button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}[hidden]{display:none!important}#app{background:var(--space);isolation:isolate;flex-direction:column;height:100dvh;min-height:360px;display:flex}#entrance{z-index:50;background:radial-gradient(at 25% 23%,#3e5265 0%,#0000 45%),radial-gradient(at 80% 80%,#522c46 0%,#0000 48%),#06121b;place-items:center;display:grid;position:fixed;inset:0;overflow:auto}.welcome{border:2px solid var(--gold);text-align:center;background:linear-gradient(145deg,#172d3b,#0b131e);border-radius:26px;width:min(94vw,430px);padding:24px 20px;box-shadow:0 25px 100px #000b}.emblem{border:5px solid var(--gold);color:#ffe078;background:conic-gradient(from 40deg,#314d63,#5c4056,#274d56,#314d63);border-radius:50%;place-items:center;width:122px;height:122px;margin:4px auto 18px;font:italic 700 87px Georgia,serif;display:grid;transform:rotate(-9deg);box-shadow:0 0 0 8px #f5bf3528,0 0 55px #d2646a50}.welcome h1{color:#fff5df;margin:12px 0 5px;font:italic 700 clamp(30px,8vw,44px) Georgia,serif}.welcome p{color:#dce3e6;font-size:17px;line-height:1.5}.rainbow{background:linear-gradient(90deg,#f36d49,#ecb342,#ece375,#6bc0a1,#4b92ca,#ad77bd,#e58aaf);border-radius:15px;height:12px;margin:21px 0}#enter{color:#17202a;background:linear-gradient(#ffd85b,#df9829);border:2px solid #ffe89c;border-radius:14px;width:100%;min-height:58px;margin-top:12px;font-size:21px;font-weight:900}.head{border-bottom:2px solid var(--gold);background:linear-gradient(120deg,#1e3341,#07121d);flex:0 0 60px;justify-content:space-between;align-items:center;min-height:60px;padding:4px 10px;display:flex}.brand{align-items:center;gap:10px;min-width:0;display:flex}.brand-mark{border:3px solid var(--gold);color:#fbd36b;border-radius:50%;flex:0 0 43px;place-items:center;width:43px;height:43px;font:italic 700 32px Georgia;display:grid}.brand-copy strong{white-space:nowrap;font:italic 700 21px/1.1 Georgia,serif;display:block}.brand-copy small{color:#f3c452;letter-spacing:2px;text-transform:uppercase;font-size:10px;font-weight:850;display:block}.head .mini{border:1px solid var(--line);color:#fff;background:#1a3040;border-radius:12px;width:48px;height:48px;font-size:25px}.actions{background:#142635;flex:0 0 62px;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:6px;display:grid}.actions button{color:#fff;background:linear-gradient(#263e4d,#101b27);border:2px solid #af924e;border-radius:10px;min-height:50px;padding:2px;font-size:14px;font-weight:850}.actions .stop{background:linear-gradient(#e8594e,#a22e2a);border-color:#ffa68e}.actions .go{background:linear-gradient(#52b65a,#217744);border-color:#b7f8a7}.viewport{background:radial-gradient(#344d5d 0%,#1a2c39 58%,#08131e 100%);flex:1;grid-template-columns:51px minmax(0,1fr) 51px;gap:3px;min-height:0;padding:5px 3px;display:grid;position:relative;overflow:hidden}.rail{z-index:5;scrollbar-width:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-height:0;display:flex;overflow-y:auto}.rail::-webkit-scrollbar{display:none}.rail button{color:#fff;background:linear-gradient(#2b4758,#102330);border:2px solid #b89957;border-radius:11px;flex:0 0 47px;width:47px;min-height:47px;padding:0;font-size:24px;font-weight:900}.rail button span{color:#f7e7ca;font-size:9px;line-height:1;display:block}.rail button.selected{color:#17232b;background:linear-gradient(#ffe374,#d4a039);border-color:#fff3bc}.rail button.selected span{color:#17232b}.canvas-area{touch-action:none;place-items:center;min-width:0;min-height:0;display:grid;position:relative;overflow:hidden}#board{background:var(--paper);aspect-ratio:9/16;transform-origin:50%;touch-action:none;will-change:transform;border:3px solid #ffe6a7;position:relative;box-shadow:0 0 0 3px #121b22,0 8px 22px #02080fc9}#board canvas{width:100%;height:100%;display:block;position:absolute;inset:0}#paint{touch-action:none;cursor:crosshair}#reference{pointer-events:none}.hint{color:#f2e1bf;pointer-events:none;white-space:nowrap;background:#0b1928c9;border:1px solid #c9ad6d;border-radius:7px;padding:3px 7px;font-size:12px;position:absolute;top:8px;left:50%;transform:translate(-50%)}.shelf{background:#0c1b29;flex:0 0 48px;padding:2px 8px 5px}.shelf button{border:2px solid var(--gold);color:#fff;background:linear-gradient(#263f4e,#0f1f2d);border-radius:12px;align-items:center;gap:9px;width:100%;min-height:43px;padding:2px 12px;font-size:15px;font-weight:850;display:flex}#chip{background:#bd5549;border:2px solid #f9e9be;border-radius:50%;flex:0 0 26px;width:26px;height:26px;display:inline-block}.shelf .down{color:#f9d67a;margin-left:auto;font-size:23px}.tabs{background:#081520;border-top:1px solid #886f3c;flex:0 0 68px;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;height:68px;padding:4px 7px 7px;display:grid}.tabs button{color:#fff;background:linear-gradient(#29465a,#152532);border:2px solid #a78d59;border-radius:11px;min-height:55px;padding:3px 0;font-size:11px;font-weight:800}.tabs b{font-size:21px;line-height:1.15;display:block}.tabs button.selected{color:#14242b;background:#f6c54b;border-color:#ffebb2}#status{color:#d4e7e7;text-align:center;background:#132937;border-top:1px solid #876d42;flex:0 0 28px;place-items:center;min-height:28px;max-height:28px;font-size:12px;font-weight:700;display:grid;overflow:hidden}.drawer{z-index:20;background:#102531;border:2px solid #f6c54b;border-radius:18px;max-height:min(68dvh,520px);padding:14px;position:absolute;bottom:14px;left:5px;right:5px;overflow:auto;box-shadow:0 0 0 500px #0007,0 15px 45px #000e}.drawer-head{justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;display:flex}.drawer h2{color:#ffd56a;margin:0;font-size:20px}.drawer .close{color:#fff;background:#2d4553;border:1px solid #c9a956;border-radius:8px;min-width:54px;min-height:46px}.pigments{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:6px;display:grid}.pigments button{aspect-ratio:1;border:2px solid #ead6ac;border-radius:12px;width:100%;min-height:40px;box-shadow:0 2px 4px #0007}.pigments button[aria-pressed=true]{outline-offset:1px;outline:4px solid #ffe75c}.brush-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;display:grid}.brush-grid button,.file-grid button,.setting-grid button{color:#fff;background:#294253;border:2px solid #c4a05f;border-radius:10px;min-height:56px;padding:8px;font-weight:850}.brush-grid button[aria-pressed=true]{color:#1d2931;background:#f4c14e;border-color:#fff}.setting-grid{grid-template-columns:1fr;gap:8px;display:grid}.setting-grid label{color:#f9e7bd;font-weight:850;display:block}.setting-grid input[type=range]{accent-color:#f3c24f;width:100%;height:34px}.setting-grid output{float:right;color:#6ce1d2}.file-grid{grid-template-columns:1fr 1fr;gap:9px;display:grid}.file-grid button{font-size:15px}.note{color:#a9c9ce;font-size:13px;line-height:1.35}#file,#projectFile{display:none}@media (width>=700px){#app{max-width:650px;margin:auto;box-shadow:0 0 50px #000}.drawer{left:25px;right:25px}.rail button{width:51px}}@media (height<=670px){.head{flex-basis:50px;min-height:50px}.actions{flex-basis:49px}.actions button{min-height:40px}.viewport{padding:2px}.rail{gap:2px}.rail button{flex-basis:37px;min-height:37px}.tabs{flex-basis:56px;height:56px}.tabs button{min-height:44px}.shelf{flex-basis:42px;height:42px}.shelf button{min-height:37px}}.emblem{background:#f9f1e1;border:0;border-radius:10px;width:180px;height:117px;margin:4px auto 18px;overflow:hidden;transform:none;box-shadow:0 0 0 2px #f6c54b88,0 0 35px #d2646a22}.emblem img{object-fit:contain;width:100%;height:100%;display:block}.brand-mark{color:#0000;background:#fff6e6;border:0;border-radius:6px;flex:0 0 76px;width:76px;height:46px;overflow:hidden}.brand-mark img{object-fit:contain;width:100%;height:100%;display:block}.brand-copy strong{letter-spacing:-.4px;font-size:clamp(15px,4.7vw,21px)}@media (width<=365px){.brand{gap:6px}.brand-mark{flex-basis:58px;width:58px;height:39px}.brand-copy strong{font-size:16px}.brand-copy small{letter-spacing:1px;font-size:9px}.head .mini{width:42px;height:44px}}
+#zgen-tape{position:absolute;inset:0;z-index:20;pointer-events:none;border:16px solid rgba(44,132,210,.46);box-shadow:inset 0 0 0 1px #e0f4ff,0 0 0 1px #3e93c8;box-sizing:border-box}
+#zgen-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(to right,rgba(16,59,91,.25) 1px,transparent 1px),linear-gradient(to bottom,rgba(16,59,91,.25) 1px,transparent 1px);background-size:33.333% 100%,100% 33.333%;opacity:.76}
+#zgen-center{position:absolute;top:50%;left:50%;width:10px;height:10px;transform:translate(-50%,-50%);border-radius:50%;background:#263847;border:2px solid #e9f8ff;box-shadow:0 0 0 1px #375d78}
+.zgen-panel{border-top:1px solid #dfbd6b;margin-top:12px;padding-top:12px}
+.zgen-panel h3{color:#ffe295;font-size:19px;margin:4px 0 9px}
+.zgen-paper{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:9px}
+.zgen-paper button{min-height:48px;color:#fff;background:#2a4a5d;border:2px solid #dbb66e;border-radius:10px;font-weight:850;padding:6px;font-size:13px}
+.zgen-paper button:focus-visible{outline:3px solid #ffdc60}
+
+
+/* Isolated 2026-11-21 layout candidate. Keep bundled painting logic untouched.
+   Owner's operational canvas / brush / wet pigment / history remains the source. */
+html,body{margin:0!important;width:100%!important;height:100%!important;overflow:hidden!important;overscroll-behavior:none}
+body{background:#07121c}
+#app{height:100dvh!important;min-height:0!important;max-width:100%!important;width:100%!important;margin:0 auto!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+.head{flex:0 0 44px!important;min-height:44px!important;padding:2px 7px!important;gap:6px}
+.brand{gap:7px!important;max-width:calc(100% - 50px)}
+.brand-mark{width:45px!important;height:34px!important;flex:0 0 45px!important}
+.brand-mark img{width:100%;height:100%;object-fit:contain}
+.brand-copy strong{font-size:clamp(13px,3.2vw,17px)!important;line-height:1.06!important}
+.brand-copy small{font-size:9px!important;letter-spacing:.5px!important}
+.head .mini{width:40px!important;height:37px!important;min-height:37px!important;font-size:20px!important;flex-shrink:0}
+.actions{flex:0 0 47px!important;min-height:47px!important;gap:4px!important;padding:3px 5px!important}
+.actions button{min-height:40px!important;font-size:clamp(11px,2.8vw,15px)!important;line-height:1.1!important;border-radius:9px!important;padding:2px!important}
+.viewport{flex:1 1 0%!important;min-height:0!important;width:100%;grid-template-columns:clamp(43px,11vw,54px) minmax(0,1fr) clamp(43px,11vw,54px)!important;gap:4px!important;padding:5px 3px!important;overflow:hidden!important}
+.rail{min-height:0!important;max-height:100%;justify-content:center!important;overflow-y:auto!important;overscroll-behavior:contain;gap:6px!important;scrollbar-width:none}
+.rail button{width:clamp(40px,10.5vw,50px)!important;min-height:45px!important;flex:0 0 45px!important;font-size:20px!important;line-height:1!important;padding:2px!important;border-radius:10px!important}
+.rail button span{font-size:10px!important;line-height:1.1!important}
+.canvas-area{min-width:0!important;min-height:0!important;max-height:100%;overflow:hidden!important}
+#board{max-width:calc(100% - 8px)!important;max-height:calc(100% - 8px)!important}
+.hint{font-size:10px!important;max-width:96%;overflow:hidden;text-overflow:ellipsis}
+.shelf{flex:0 0 43px!important;min-height:43px!important;height:43px!important;padding:2px 7px!important}
+.shelf button{min-height:38px!important;font-size:14px!important;border-radius:10px!important}
+#chip{width:22px!important;height:22px!important;flex-basis:22px!important}
+.tabs{display:none!important}
+#status{flex:0 0 24px!important;min-height:24px!important;max-height:24px!important;font-size:11px!important}
+.drawer{bottom:6px!important;left:5px!important;right:5px!important;max-height:min(66dvh,520px)!important;padding:11px!important;overflow-y:auto!important;overscroll-behavior:contain}
+@media (max-height:590px){
+ .head{flex-basis:36px!important;min-height:36px!important}
+ .brand-mark{height:29px!important;width:38px!important;flex-basis:38px!important}
+ .head .mini{height:32px!important;min-height:32px!important}
+ .actions{flex-basis:41px!important;min-height:41px!important}
+ .actions button{min-height:34px!important}
+ .shelf{flex-basis:36px!important;min-height:36px!important;height:36px!important}
+ .shelf button{min-height:31px!important}
+ #status{flex-basis:20px!important;min-height:20px!important;max-height:20px!important}
+ .rail{gap:3px!important}
+ .rail button{min-height:36px!important;flex-basis:36px!important;font-size:17px!important}
+ .rail button span{font-size:9px!important}
+ .viewport{padding:2px!important}
+}
+@media (max-width:380px){.brand-copy small{display:none!important}.actions button{font-size:11px!important}}
+@media (min-width:700px){.viewport{grid-template-columns:56px minmax(0,1fr) 56px!important}.rail button{width:51px!important}.actions button{font-size:15px!important}}
+
+
+/* Owner visual QA 2026-11-21 15:59 BKK: two ALWAYS-VISIBLE, slim
+   left/right controls; canvas dominant; no giant blue matt or gate.
+   This is presentation-only; preserve every original painting handler. */
+#entrance{display:none!important}
+#app .head{flex:0 0 37px!important;min-height:37px!important;padding:2px 6px!important}
+#app .brand-mark{height:29px!important;width:39px!important;flex-basis:39px!important}
+#app .brand-copy strong{font-size:clamp(14px,3.8vw,18px)!important}
+#app .brand-copy small{display:none!important}
+#app .head .mini{height:32px!important;min-height:32px!important;width:35px!important;font-size:19px!important}
+#app .actions{flex:0 0 39px!important;min-height:39px!important;padding:2px 4px!important;gap:3px!important}
+#app .actions button{min-height:34px!important;border-width:1px!important;border-radius:7px!important;font-size:clamp(10px,2.9vw,13px)!important}
+#app .viewport{grid-template-columns:42px minmax(0,1fr) 42px!important;gap:3px!important;padding:3px!important;background:#101d28!important;align-items:stretch}
+#app .rail{align-self:stretch;justify-content:flex-start!important;align-items:center!important;gap:6px!important;padding:7px 0!important;background:#142734;border:1px solid #667b82;border-radius:8px;overflow-y:auto!important;overflow-x:hidden!important}
+#app .rail button{width:38px!important;min-width:38px!important;height:42px!important;min-height:42px!important;flex:0 0 42px!important;border:1px solid #caa85e!important;border-radius:8px!important;padding:2px 0!important;line-height:1!important;font-size:19px!important;box-shadow:none!important}
+#app .rail button span{font-size:9px!important;color:#fff0d3!important;line-height:1.12!important;font-weight:750!important;white-space:nowrap}
+#app .rail button.selected span{color:#13232e!important}
+#app .canvas-area{min-width:0!important;min-height:0!important;overflow:hidden!important}
+#app #board{max-width:calc(100% - 4px)!important;max-height:calc(100% - 4px)!important;border-width:2px!important;box-shadow:0 0 0 1px #718896!important}
+#zgen-tape{border-width:3px!important;border-color:rgba(55,130,185,.50)!important;box-shadow:inset 0 0 0 1px #cedfe7!important}
+#zgen-grid{opacity:.19!important}
+#zgen-center{opacity:.38!important}
+#app .hint{display:none!important}
+#app .shelf{flex:0 0 34px!important;height:34px!important;min-height:34px!important;padding:2px 5px!important}
+#app .shelf button{min-height:30px!important;padding:2px 8px!important;font-size:12px!important;border-width:1px!important;border-radius:7px!important}
+#app #chip{width:18px!important;height:18px!important;flex-basis:18px!important}
+#app #status{flex:0 0 19px!important;min-height:19px!important;max-height:19px!important;font-size:10px!important;white-space:nowrap!important}
+#app .drawer{max-height:min(65dvh,450px)!important;border-radius:12px!important}
+@media (max-height:540px){
+ #app .head{flex-basis:33px!important;min-height:33px!important}
+ #app .actions{flex-basis:35px!important;min-height:35px!important}
+ #app .actions button{min-height:30px!important}
+ #app .viewport{grid-template-columns:39px minmax(0,1fr) 39px!important;gap:2px!important;padding:2px!important}
+ #app .rail{gap:3px!important;padding:3px 0!important}
+ #app .rail button{width:35px!important;min-width:35px!important;height:35px!important;min-height:35px!important;flex-basis:35px!important;font-size:16px!important}
+ #app .rail button span{font-size:8px!important}
+ #app .shelf{flex-basis:30px!important;height:30px!important;min-height:30px!important}
+ #app .shelf button{min-height:26px!important}
+}
+@media (min-width:700px){
+ #app .viewport{grid-template-columns:48px minmax(0,1fr) 48px!important;gap:6px!important;padding:5px!important}
+ #app .rail button{width:43px!important;min-width:43px!important;height:43px!important;min-height:43px!important;flex-basis:43px!important;font-size:20px!important}
+ #app .rail button span{font-size:9px!important}
+}
+
+/* LOCKED mobile viewport shell. Painting logic lives in the untouched module.
+   No CSS or viewport event changes canvas backing dimensions. */
+html,body{height:100dvh!important;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#app{height:var(--visual-height,100dvh)!important;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#app .head{flex-basis:44px!important;min-height:44px!important}
+#app .head .mini{width:44px!important;height:44px!important;min-height:44px!important}
+#app .actions{flex-basis:48px!important;min-height:48px!important}
+#app .actions button{min-height:44px!important}
+#app .viewport{display:grid!important;grid-template-columns:48px minmax(0,1fr) 48px!important;grid-template-rows:minmax(0,1fr)!important;gap:4px!important;padding:4px!important;background:#0b131e!important}
+#app .canvas-area{grid-column:2;grid-row:1;width:100%;height:100%;touch-action:none}
+#app #board{aspect-ratio:9/16;max-height:none!important;max-width:none!important;border:2px solid #d8cdb4!important;background:#f9f1e1;box-shadow:0 0 0 2px #000!important}
+#paint{touch-action:none}
+#app .rail{position:absolute;z-index:5;width:48px;max-height:calc(100% - 8px);padding:1px!important;gap:4px!important;justify-content:flex-start!important;overscroll-behavior:contain;touch-action:pan-y;background:#10212e}
+#app .rail button{width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;flex:0 0 44px!important;font-size:20px!important;touch-action:manipulation}
+#app .rail[data-edge=left]{left:4px;top:4px}
+#app .rail[data-edge=right]{right:4px;top:4px}
+#app #drawing-rail[data-edge=left],#app #drawing-rail[data-edge=right]{top:auto;bottom:4px}
+#app .rail[data-edge=top],#app .rail[data-edge=bottom]{left:56px;right:56px;width:auto;max-width:calc(100% - 112px);max-height:48px;flex-direction:row;overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x}
+#app .rail[data-edge=top]{top:4px}
+#app .rail[data-edge=bottom]{bottom:4px}
+#app .rail[data-collapsed=true] button:not(.rail-toggle){display:none}
+#app .rail-toggle{font-size:14px!important;color:#ffe295}
+#app .shelf{flex-basis:48px!important;min-height:48px!important;height:48px!important;padding:2px 4px!important}
+#app .shelf button{min-height:44px!important}
+#app #status{font-size:11px!important;min-height:22px!important;max-height:22px!important;flex-basis:22px!important;text-overflow:ellipsis}
+#app .drawer{left:54px!important;right:54px!important;top:4px;bottom:auto!important;max-height:calc(100% - 8px)!important;border-radius:8px!important;padding:10px!important;overscroll-behavior:contain;touch-action:pan-y}
+#app .drawer button{min-height:44px}
+#app .drawer .pigments{grid-template-columns:repeat(3,minmax(0,1fr))}
+#app .drawer .brush-grid,#app .drawer .file-grid{grid-template-columns:1fr}
+#rail-dialog{color:#fff6e9;background:#10212e;border:2px solid #f6c54b;border-radius:10px;width:min(92vw,430px);max-height:85dvh;overflow:auto;padding:16px}
+#rail-dialog::backdrop{background:#0008}
+#rail-dialog label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}
+#rail-dialog select,#rail-dialog button{min-height:44px;background:#294253;color:white;border:1px solid #c4a05f;border-radius:6px;padding:6px}
+@media(min-width:700px){#app .drawer{left:56px!important;right:auto!important;width:300px}#app .drawer[data-side=right]{left:auto!important;right:56px!important}#app .drawer .pigments{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+
+/* Short landscape only: constrain the paper box inside the real stage.
+   No canvas.width/height mutation; original paint backing and history stay frozen.
+   Aspect ratio is preserved through definite height + automatic aspect width. */
+@media (max-height:420px) and (min-width:600px) {
+  #app #board {
+    box-sizing:border-box!important;
+    width:auto!important;
+    height:calc(100% - 8px)!important;
+    max-height:calc(100% - 8px)!important;
+    aspect-ratio:9/16!important;
+  }
+}
+
+/* 21 Nov visual QA: keep full Paint / Draw / View rail names readable inside
+   existing 44px touch targets. Previous 20px inherited font clipped labels. */
+#app .rail .rail-toggle {
+  font-size:12px!important;
+  font-weight:850!important;
+  letter-spacing:-.3px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-align:center!important;
+}
+
+
+/* Owner P0: five easy size choices, no adjustment slider required.
+   Overlays the workspace without resizing 720x1280 paper or changing rails. */
+.zgen-size-strip{
+  position:absolute;z-index:8;left:50%;bottom:8px;transform:translateX(-50%);
+  display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));
+  gap:4px;align-items:center;
+  padding:4px;background:#071620ed;border:1px solid #d9b76a;
+  border-radius:12px;box-shadow:0 4px 18px #0009;
+  max-width:calc(100% - 16px);
+}
+.zgen-size-strip .zgen-size-button{
+  min-width:44px;min-height:44px;border:1px solid #a88d60;border-radius:8px;
+  color:#fff8dd;background:#294354;font:800 14px/1 system-ui,sans-serif;
+  touch-action:manipulation;
+}
+.zgen-size-strip .zgen-size-button[aria-pressed=true]{
+  background:#f5ca65;color:#132330;outline:2px solid white;outline-offset:-2px;
+}
+@media (max-height:400px){
+  .zgen-size-strip{bottom:1px;padding:2px;gap:3px}
+  .zgen-size-strip .zgen-size-button{min-height:40px}
+}
