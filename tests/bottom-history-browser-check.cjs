@@ -24,6 +24,22 @@ const pixels=()=>document.querySelector('#paint').getContext('2d',{willReadFrequ
  assert.equal(await page.evaluate(()=>document.querySelector('.zshell-history-right').dataset.act),'redo');
  assert.equal(await page.evaluate(()=>document.querySelectorAll('[data-act="undo"]').length),1);
  assert.equal(await page.evaluate(()=>document.querySelectorAll('[data-act="redo"]').length),1);
+ const layout=await page.evaluate(()=>{
+   const bounds=selector=>{
+     const r=document.querySelector(selector).getBoundingClientRect();
+     return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};
+   };
+   return {undo:bounds('.zshell-history-left'),
+     redo:bounds('.zshell-history-right'),
+     artwork:bounds('#zshell-bottom .zshell-handle'),
+     screen:window.innerWidth};
+ });
+ assert(layout.undo.left>=0 && layout.artwork.right<=layout.screen,
+   'History+artwork group must be fully visible on mobile');
+ assert(layout.undo.right<=layout.redo.left+1 && layout.redo.left-layout.undo.right<=6,
+   'Owner UI: Undo and Redo must be ADJACENT curved arrows');
+ assert(layout.redo.right<=layout.artwork.left+1 && layout.artwork.left-layout.redo.right<=6,
+   'Two arrows must form a contiguous group left of bottom artwork handle');
  const fresh=await page.evaluate(()=>{document.querySelector('[data-brush=graphite]').click();
    return window.__ZGEN_BETA_26.state().brush;});
  assert.equal(fresh,'graphite','Native graphite tool must be selected');
