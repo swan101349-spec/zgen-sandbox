@@ -28,8 +28,8 @@ const wetOld=segment(before.raw,'function __zgenWetReuse(','function __zgenHisto
 const wetNew=segment(after.raw,'const __zgenWetZero1=','function __zgenHistoryUsage(');
 const usageOld=segment(before.raw,'function __zgenHistoryUsage(','function __zgenTrimHistory(');
 const usageNew=segment(after.raw,'function __zgenHistoryUsage(','function __zgenTrimHistory(');
-const restoreOld=segment(before.raw,'function S(e){','function C(e){');
-const restoreNew=segment(after.raw,'function S(e){','function C(e){');
+const restoreOld=segment(before.raw,'function S(e){i.putImageData(__zgenTileRestore(','function C(e){');
+const restoreNew=segment(after.raw,'function S(e){i.putImageData(__zgenTileRestore(','function C(e){');
 const reconstructed=after.raw.replace(wetNew,wetOld).replace(usageNew,usageOld)
  .replace(restoreNew,restoreOld);
 assert.equal(reconstructed,before.raw,
