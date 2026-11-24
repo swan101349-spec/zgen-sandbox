@@ -1,0 +1,52 @@
+name: Tiled Undo history | 40 native marks + 128MiB safety
+on:
+  push:
+    branches: ['engineering/tiled-native-history-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-history:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify commit and untouched original painting/retention code
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check e7ea29c7aa850db3cc8b7cbc50495bf21bb8feb6 HEAD
+          git diff --name-only e7ea29c7aa850db3cc8b7cbc50495bf21bb8feb6 HEAD >/tmp/zgen-tiled-files.txt
+          if grep -Ev '^(studio-recovery-20261124/index.html|tests/native-tiled-undo-40-browser-check.cjs|tests/native-tiled-history-source-check.cjs|\.github/workflows/native-tiled-undo-qa.yml)$' /tmp/zgen-tiled-files.txt; then
+            echo "BLOCKED: protected painter or artwork file changed"; exit 1
+          fi
+          node --check tests/native-tiled-undo-40-browser-check.cjs
+          node --check tests/native-tiled-history-source-check.cjs
+          node tests/native-tiled-history-source-check.cjs
+      - name: Install isolated browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Run 40 real strokes and full Undo/Redo, reference + reload protections
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-tiled-preview.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-tiled-undo-40-browser-check.cjs
+          node tests/recovery-shortcut-bottom-history-check.cjs
+          node tests/graphite-three-line-control-browser-check.cjs
