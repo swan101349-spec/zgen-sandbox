@@ -50,7 +50,11 @@ const capture=()=>{
   const base=await page.evaluate(capture);
   assert.equal(base.history.undo.length,1,'Real native graphite baseline stroke recorded');
   assert.deepEqual(base.canvas,[720,1280]);
-  await page.evaluate(()=>document.querySelector('[data-brush=round]').click());
+  // The native Round watercolor picker is created only when Brush Foundry opens.
+  await page.evaluate(()=>document.querySelector('button[data-act=brush]').click());
+  await page.waitForFunction(()=>!document.querySelector('#drawer')?.hidden &&
+    document.querySelector('#drawer [data-brush="round"]'),null,{timeout:10000});
+  await page.evaluate(()=>document.querySelector('#drawer [data-brush="round"]').click());
   await page.waitForFunction(()=>window.__ZGEN_BETA_26.state().brush==='round');
   for(const y of [.39,.51,.63])await trace(y,.27,.73);
   await page.evaluate(()=>document.querySelector('[data-act=stop]').click());
