@@ -25,7 +25,7 @@ function segment(source,start,end){
  return source.slice(a,b);
 }
 const wetOld=segment(before.raw,'function __zgenWetReuse(','function __zgenHistoryUsage(');
-const wetNew=segment(after.raw,'const __zgenWetZero1=','function __zgenHistoryUsage(');
+const wetNew=segment(after.raw,'\nconst __zgenWetZero1=','function __zgenHistoryUsage(');
 const usageOld=segment(before.raw,'function __zgenHistoryUsage(','function __zgenTrimHistory(');
 const usageNew=segment(after.raw,'function __zgenHistoryUsage(','function __zgenTrimHistory(');
 const restoreOld=segment(before.raw,'function S(e){i.putImageData(__zgenTileRestore(','function C(e){');
