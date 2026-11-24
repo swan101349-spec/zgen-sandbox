@@ -35,9 +35,26 @@ async function runView(browser,viewport,label){
    return route.fulfill({status:200,contentType:'image/svg+xml',body:fixture(sheet)});
  });
  await page.goto('http://127.0.0.1:8765/studio-recovery-20261124/',{waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>window.__ZGEN_ORIGINAL24?.installed===24&&
-   window.__ZGEN_ART_RECOVERY?.status().ready&&!window.__ZGEN_ART_RECOVERY.status().blocked,
-   null,{timeout:60000});
+ try{
+   await page.waitForFunction(()=>window.__ZGEN_ORIGINAL24?.installed===24&&
+     window.__ZGEN_ART_RECOVERY?.status().ready&&!window.__ZGEN_ART_RECOVERY.status().blocked,
+     null,{timeout:20000});
+ }catch(e){
+   const diagnostic=await page.evaluate(()=>({
+     nativeReady:!!window.__ZGEN_BETA_26,
+     shellReady:!!document.querySelector('#zshell-bottom-panel'),
+     galleryReady:!!window.__ZGEN_ORIGINAL24,
+     galleryGate:window.__ZGEN_ORIGINAL24_GATE||null,
+     galleryRoot:!!document.querySelector('#zgen-original-gallery24'),
+     recovery:window.__ZGEN_ART_RECOVERY?.status?.()||null,
+     images:[...document.images].filter(x=>x.src.includes('/ghost-sheets/')).map(x=>({
+       url:x.currentSrc,loaded:x.complete,width:x.naturalWidth,height:x.naturalHeight
+     })),
+     state:document.readyState
+   }));
+   throw new Error('Gallery startup: '+JSON.stringify(diagnostic)+
+     '; uncaught: '+JSON.stringify(errors)+'; '+e.message);
+ }
  const shell=await page.evaluate(()=>({size:[document.querySelector('#paint').width,
    document.querySelector('#paint').height],images:window.__ZGEN_ORIGINAL24.installed,
    canvasText:document.querySelector('#board').textContent}));
