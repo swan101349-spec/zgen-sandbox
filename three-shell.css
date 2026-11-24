@@ -279,3 +279,36 @@
 @media(max-width:320px){
   #app .zshell.bottom{width:min(154px,calc(100vw - 104px))!important}
 }
+
+
+/* Owner sign-off clarification, 24 Nov: ↶ ↷ NEXT TO EACH OTHER.
+   Original native history buttons remain the only history controls.
+   Pack both immediately LEFT of artwork handle; avoid occupying both ends. */
+#app .zshell.bottom{
+  display:flex!important;
+  flex-direction:row!important;
+  justify-content:center!important;
+  align-items:center!important;
+  gap:3px!important;
+  width:min(270px,calc(100vw - 12px))!important;
+}
+#app .zshell.bottom .zshell-history-arrow{
+  position:static!important;
+  flex:0 0 42px!important;
+  left:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+}
+#app .zshell.bottom .zshell-history-left,
+#app .zshell.bottom .zshell-history-right{
+  left:auto!important;
+  right:auto!important;
+}
+#app .zshell.bottom .zshell-handle{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  width:auto!important;
+}
+@media(max-width:320px){
+  #app .zshell.bottom{width:calc(100vw - 12px)!important}
+}
