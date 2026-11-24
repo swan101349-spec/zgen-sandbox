@@ -208,6 +208,19 @@
   subhead(right.panel,'STOP / GO · file controls');right.panel.append(topActions);
   // The prior "Original layout" link now pointed to the same current beta root.
   // Remove that dead-end navigation rather than pretending it changes editors.
+  // Native Undo and Redo are moved, not copied: their original delegated
+  // data-act handlers and disabled state remain authoritative.
+  const historyArrow=(action,side,symbol,label)=>{
+    const button=canvasTools.querySelector('button[data-act="'+action+'"]');
+    if(!button)return;
+    button.classList.add('zshell-history-arrow','zshell-history-'+side);
+    button.textContent=symbol;
+    button.setAttribute('aria-label',label);
+    button.title=label;
+    bottom.aside.insertBefore(button,bottom.handle);
+  };
+  historyArrow('undo','left','↶','Undo last stroke');
+  historyArrow('redo','right','↷','Redo last undone stroke');
   subhead(bottom.panel,'Selected brush');bottom.panel.append(brushShelf);
   subhead(bottom.panel,'44-pigment palette');
   buttons(bottom.panel,[['color','🎨 Choose pigments'],['water','💧 Water & pigment']]);
@@ -227,6 +240,9 @@
     });
     sh.close.addEventListener('click',closeAll);
     sh.panel.addEventListener('click',ev=>{
+      const action=ev.target.closest('button[data-act]')?.dataset.act;
+      // An artist may repeatedly Undo/Redo without hunting for Tools again.
+      if(action==='undo'||action==='redo')return;
       if(ev.target.closest('button[data-act],button[data-brush],a[href]')) closeAll();
     });
   }
