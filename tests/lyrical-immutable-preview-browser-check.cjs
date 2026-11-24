@@ -126,8 +126,14 @@ async function drawPen(cdp,box){
    assert.deepEqual(initial.dimensions,[720,1280]);
    assert.equal(await page.locator('#paint').count(),1,'No duplicate painter allowed');
    assert.equal(await page.locator('#zshell-left button[data-brush=lyrical]').count(),1);
-   assert.equal(await page.locator('#zgen-original-gallery24').count(),1,
-     'Owner-approved gallery stays part of same Three-Shell');
+   await page.waitForFunction(()=>window.__ZGEN_ORIGINAL24?.installed===24||
+     !!window.__ZGEN_ORIGINAL24_GATE,null,{timeout:18000});
+   const gallery=await page.evaluate(()=>({
+     installed:window.__ZGEN_ORIGINAL24?.installed||0,
+     gate:window.__ZGEN_ORIGINAL24_GATE||null
+   }));
+   assert.equal(gallery.installed,24,
+     'All 24 real original crops must load on preview; gallery='+JSON.stringify(gallery));
    await page.locator('#zshell-left .zshell-handle').click();
    await page.locator('#zshell-left button[data-brush=lyrical]').click();
    await page.waitForFunction(()=>window.__ZGEN_BETA_26.state().brush==='lyrical');
