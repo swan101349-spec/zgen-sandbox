@@ -27,7 +27,7 @@ for(const name of names)assert(allowed.has(name),'An unauthorized source/artwork
 assert(!names.some(s=>s.includes('ghost-sheets')||s.endsWith('.png')),
  'Private artist sheets MUST NOT be committed in public GitHub repository');
 for(const s of ['Ms. Rascal + Rascal Cat','Original Sketchbook','1448','1086',
- 'document.querySelector','getElementById','file.dispatchEvent',
+ 'panel.querySelector','getElementById','file.dispatchEvent',
  'reference','window.__ZGEN_ORIGINAL24_GATE','PRIVATE_ASSETS_NOT_PRESENT',
  'zshell-bottom-panel'])
   assert(gallery.includes(s),'Lost original-gallery behavior / privacy gate: '+s);
