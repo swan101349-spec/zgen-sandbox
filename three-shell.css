@@ -256,3 +256,54 @@
 #app .zshell-rail-swap[aria-pressed=true]{
   background:#f4cc79!important;color:#0d2230!important;border-color:#fff3c5!important
 }
+
+
+/* C5 / 23 Nov artist visual fix: ONLY the native color drawer moves lower.
+ * Original 720x1280 canvas, wet physics, palette values and touch event
+ * handlers remain byte-for-byte untouched. Small visible half-pans keep
+ * a usable 34px button hit box for finger and S Pen.
+ * Panel pinch-to-expand is a SEPARATE follow-on gate and is not faked here. */
+#app .drawer:has(.pigments) {
+  top:auto!important;
+  bottom:clamp(46px,6dvh,66px)!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translateX(-50%)!important;
+  width:min(318px,calc(100vw - 104px))!important;
+  max-width:calc(100vw - 104px)!important;
+  max-height:min(42dvh,314px)!important;
+  min-height:0!important;
+  padding:6px!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+}
+#app .drawer:has(.pigments) h2 {font-size:13px!important;line-height:1.2!important}
+#app .drawer:has(.pigments) .close {
+  min-width:32px!important;
+  min-height:32px!important;
+  font-size:20px!important;
+}
+#app .drawer:has(.pigments) .pigments {
+  display:grid!important;
+  grid-template-columns:repeat(auto-fill,minmax(34px,1fr))!important;
+  gap:2px!important;
+  padding:2px!important;
+}
+#app .drawer:has(.pigments) .pigments button {
+  box-sizing:border-box!important;
+  justify-self:center!important;
+  width:34px!important;
+  height:34px!important;
+  min-height:34px!important;
+  max-width:34px!important;
+  padding:5px!important;
+  border-radius:50%!important;
+  background-clip:content-box!important;
+}
+@media (max-height:580px) {
+  #app .drawer:has(.pigments) {
+    bottom:43px!important;
+    max-height:min(46dvh,230px)!important;
+  }
+}

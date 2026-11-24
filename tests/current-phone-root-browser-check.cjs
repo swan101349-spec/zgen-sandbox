@@ -66,6 +66,43 @@ const fs=require('node:fs');
       assert.equal(await swap.getAttribute('aria-pressed'),'false','Second switch must restore original arrangement');
       assert.equal(await page.locator('a[href="./index.html"]').count(),0,'Obsolete self-link must be removed');
       assert.equal(await page.locator('#zshell-bottom-panel button[data-act="files"]').textContent(),'▣ Files / Export PNG');
+
+      // C5 A1: native color picker stays lower on canvas and uses small pans.
+      // Gesture expansion is separately gated, not claimed by this test.
+      await page.locator('#zshell-bottom .zshell-handle').click();
+      await page.locator('#zshell-bottom-panel button[data-act="color"]').click();
+      await page.locator('#drawer .pigments button').first().waitFor({state:'visible',timeout:8000});
+      const paletteQA=await page.evaluate(()=>{
+        const drawer=document.querySelector('#drawer');
+        const area=document.querySelector('#canvasArea').getBoundingClientRect();
+        const rect=drawer.getBoundingClientRect();
+        const pans=[...drawer.querySelectorAll('.pigments button')];
+        const swatch=pans[0]?.getBoundingClientRect();
+        const paint=document.querySelector('#paint');
+        const ref=document.querySelector('#reference');
+        return {
+          count:pans.length,
+          topGap:Math.round(rect.top-area.top),
+          areaHeight:Math.round(area.height),
+          width:Math.round(rect.width),
+          panSize:Math.round(swatch?.width||0),
+          height:Math.round(rect.height),
+          backing:[paint.width,paint.height,ref.width,ref.height],
+          scrollHeight:drawer.scrollHeight,
+          clientHeight:drawer.clientHeight
+        };
+      });
+      assert.equal(paletteQA.count,44,'All 44 real native pigments remain accessible');
+      assert.ok(paletteQA.topGap>=Math.min(78,paletteQA.areaHeight*.20),
+        'Palette must not cover the upper canvas: '+JSON.stringify(paletteQA));
+      assert.ok(paletteQA.width<=322,'Mobile color panel must stay compact: '+JSON.stringify(paletteQA));
+      assert.ok(paletteQA.panSize>=32&&paletteQA.panSize<=36,
+        'Compact half-pan targets must remain finger/S Pen reachable: '+JSON.stringify(paletteQA));
+      assert.deepEqual(paletteQA.backing,[720,1280,720,1280],
+        'Palette CSS must never reallocate painting/reference canvas');
+      await page.locator('#drawer .pigments button').nth(9).click();
+      await page.screenshot({path:'three-shell-browser-qa/color-drawer-lower-'+cfg.width+'x'+cfg.height+'.png'});
+      console.log('C5_COMPACT_LOW_PALETTE '+JSON.stringify({viewport:cfg,...paletteQA}));
       assert.equal(downloads.length,0,'No surprise artwork PNG download at launch or control use');
       assert.deepEqual(errors,[],'Root page has no uncaught JavaScript errors');
       out.push({viewport:cfg,rootCurrent:true,...proof,brushSizes:5,contextualSliders:3,noPhantomDownload:true});
