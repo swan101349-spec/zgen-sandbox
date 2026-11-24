@@ -45,6 +45,10 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       hex,{timeout:5000});
     assert.equal(await page.locator('[data-graphite-tone][aria-pressed=true]').count(),1);
     assert.equal(await page.locator('[data-graphite-tone="'+hex+'"]').getAttribute('aria-pressed'),'true');
+    // Close only the floating ☷ adjustment overlay before making the mark.
+    // This matches the physical artist workflow and prevents UI hit interception.
+    await page.locator('.zshell-adjust-handle').click();
+    assert.equal(await page.locator('#zshell-adjust-panel').evaluate(x=>x.hidden),true);
     // Native hit-test: same canvas trajectory for each native graphite shade.
     const frame=await page.locator('#paint').boundingBox();
     assert.ok(frame&&frame.width>100&&frame.height>150);
