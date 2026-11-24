@@ -63,7 +63,49 @@ function markTip(ctx,pt,geom){
   ctx.beginPath();ctx.arc(pt.x,pt.y,Math.max(.35,geom.core*.25),0,Math.PI*2);ctx.fill();
   ctx.restore();lastMetrics.marks++;
 }
+// One recovered atmospheric pencil at a time. Dry Scrub uses the
+// ORIGINAL native C1 pointer/history transaction, never a second canvas.
+// The geometry follows the private atmospheric pencil's directional recipe:
+// short, rotating translucent marks, scaled by real pen pressure and flare.
+// True watercolor ★ is deliberately NOT simulated by dry Canvas2D.
+function scrubDry(ctx,a,b,now,tangent){
+  const length=Math.hypot(b.x-a.x,b.y-a.y);
+  if(length<.001)return;
+  const nx=-tangent.y,ny=tangent.x;
+  const coverage=clamp((now.core+now.flare)*1.6,3,48);
+  const samples=Math.min(18,Math.max(2,Math.ceil(length/3)));
+  const count=clamp(Math.round((.85+opts.fan)*3),2,8);
+  const heading=Math.atan2(tangent.y,tangent.x);
+  ctx.save();ctx.strokeStyle=now.color;ctx.lineCap='round';
+  for(let s=0;s<samples;s++){
+    const f=(s+.5)/samples;
+    const cx=a.x+(b.x-a.x)*f,cy=a.y+(b.y-a.y)*f;
+    for(let m=0;m<count;m++){
+      // Stable deterministic marks across replay; no Math.random jitter.
+      let seed=(Math.imul(stroke?.id||1,2654435761)^
+        Math.imul(stroke?.points.length||1,2246822519)^
+        Math.imul(s+1,3266489917)^Math.imul(m+1,668265263))>>>0;
+      const rnd=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+      const across=(rnd()-.5)*coverage*1.8;
+      const along=(rnd()-.5)*Math.min(10,coverage*.38);
+      const x=cx+nx*across+tangent.x*along;
+      const y=cy+ny*across+tangent.y*along;
+      const angle=heading+(rnd()-.5)*Math.PI*1.35;
+      const span=coverage*(.16+.25*rnd());
+      const half=span*.5, dx=Math.cos(angle)*half,dy=Math.sin(angle)*half;
+      const x1=clamp(x-dx,0,720),y1=clamp(y-dy,0,1280);
+      const x2=clamp(x+dx,0,720),y2=clamp(y+dy,0,1280);
+      if(Math.hypot(x2-x1,y2-y1)<.5)continue;
+      ctx.globalAlpha=clamp(now.alpha*(.23+.34*rnd())*(.65+.35*now.pressure),.01,.26);
+      ctx.lineWidth=.45+.32*rnd();
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      lastMetrics.marks++;
+    }
+  }
+  ctx.restore();
+}
 function render(ctx,a,b,prior,now,tangent,bend){
+  if(opts.mode==='scrub'){scrubDry(ctx,a,b,now,tangent);return;}
   const nx=-tangent.y,ny=tangent.x;
   ctx.save();
   ctx.strokeStyle=now.color;ctx.lineCap='round';ctx.lineJoin='round';
@@ -202,7 +244,7 @@ function configure(patch){
   if(stroke||!patch||typeof patch!=='object')return false;
   if(patch.grade!==undefined&&Object.hasOwn(grades,patch.grade))opts.grade=patch.grade;
   if(patch.size!==undefined&&Object.hasOwn(sizes,patch.size))opts.size=patch.size;
-  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader'].includes(patch.mode))opts.mode=patch.mode;
+  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub'].includes(patch.mode))opts.mode=patch.mode;
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
   return true;
 }
