@@ -1,0 +1,47 @@
+name: Recovery shortcut | native history + artwork safety
+on:
+  push:
+    branches: ['repair/recovery-folder-adjacent-history-20261124']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  owner-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact commit and protected artwork boundaries
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check 89c666ae1d0a808ea1e4494c1b2d84bc9d266a8b HEAD
+          git diff --exit-code 89c666ae1d0a808ea1e4494c1b2d84bc9d266a8b HEAD -- \
+            index.html studio-recovery-20261124/index.html \
+            studio-recovery-20261124/artwork-survival.js \
+            studio-recovery-20261124/bounded-fill.js \
+            studio-recovery-20261124/artist-feedback.js \
+            original-engine.html shell-v2.html
+          node --check studio-recovery-20261124/three-shell.js
+          node --check tests/recovery-shortcut-bottom-history-check.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Test real native Undo/Redo and project checkpoint after reopen
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-recovery-preview.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node tests/recovery-shortcut-bottom-history-check.cjs
