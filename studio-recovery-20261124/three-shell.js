@@ -297,6 +297,13 @@
       button.setAttribute('aria-pressed',String(button.dataset.graphiteTone===current));
     });
   }
+  // Native color changes refresh the #chip style even when they originate
+  // from the 44-pan palette. Observe THAT paint state, not a fake swatch model.
+  const graphiteColorChip=document.querySelector('#chip');
+  if(graphiteColorChip && typeof MutationObserver!=='undefined'){
+    new MutationObserver(()=>{if(!adjustPanel.hidden)refreshToneButtons()})
+      .observe(graphiteColorChip,{attributes:true,attributeFilter:['style']});
+  }
   function syncBrushPigment(){
     const brush=currentBrush();
     if(brush===lastBrush)return;
@@ -422,8 +429,10 @@
         button.append(disc,name);
         button.addEventListener('click',()=>{
           graphiteTone=tone.hex;
-          // Native click bubbles to the original engine, then refresh.
+          // The native click bubbles after this listener. Sync from the
+          // actual painter chip again at the next paint frame.
           queueMicrotask(refreshToneButtons);
+          requestAnimationFrame(refreshToneButtons);
         });
         swatches.append(button);
       }
