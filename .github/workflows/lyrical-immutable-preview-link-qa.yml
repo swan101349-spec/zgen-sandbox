@@ -28,7 +28,17 @@ jobs:
           git diff --check 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD
           git diff --exit-code 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD -- studio-recovery-20261124/
           node --check tests/lyrical-immutable-preview-browser-check.cjs
-          node tests/native-lyrical-sketchy-harmony-source-check.cjs
+          git diff --name-only 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD > /tmp/lyrical-preview-changed.txt
+          if grep -Ev '^(tests/lyrical-immutable-preview-browser-check.cjs|\\.github/workflows/lyrical-immutable-preview-link-qa.yml)
+      - name: Isolated Chromium browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Inspect outside-origin HTTPS preview response and exercise native pen
+        run: node tests/lyrical-immutable-preview-browser-check.cjs
+ /tmp/lyrical-preview-changed.txt; then
+            echo "BLOCKED: preview QA changed protected native painting files"; exit 1
+          fi
       - name: Isolated Chromium browser
         run: |
           npm install --no-save --no-package-lock playwright@1.56.0
