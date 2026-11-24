@@ -1,0 +1,47 @@
+name: Owner-approved 24 original Rascals | public-crop Three-Shell acceptance
+on:
+  push:
+    branches: ['release/owner-approved-24-cropped-originals-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-original-crops:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Only 24 approved individual PNGs, all SHA-verified; original painter untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check f71bfc095b89771b3c46d63fe248f3bab538083f HEAD
+          node --check studio-recovery-20261124/original-artwork-gallery.js
+          node --check tests/native-authorized-gallery24-browser-check.cjs
+          node tests/native-original-gallery24-source-check.cjs
+      - name: Install isolated Chromium for the actual Three-Shell editor
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Test 24 authentic approved images, import, undo/redo and reload, phone and tablet
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-approved-rascals.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-authorized-gallery24-browser-check.cjs
+          node tests/native-c4-wet-history-browser-check.cjs
