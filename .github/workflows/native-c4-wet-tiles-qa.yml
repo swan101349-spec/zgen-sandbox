@@ -1,0 +1,62 @@
+name: C4 shared wet tiles | 3 + 20 wet-stroke QA
+on:
+  push:
+    branches: ['repair/c4-wet-snapshot-tiles-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wet-tiles:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact commit and original C4/Three-Shell source boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check e1530d3dee2b082ba0f85cba67fa823cd6441c1e HEAD
+          git diff --name-only e1530d3dee2b082ba0f85cba67fa823cd6441c1e HEAD > /tmp/zgen-wet-tiles-changed.txt
+          if grep -Ev '^(studio-recovery-20261124/index.html|tests/native-c4-wet-tiles-source-check.cjs|\.github/workflows/native-c4-wet-tiles-qa.yml)$' /tmp/zgen-wet-tiles-changed.txt; then
+            echo "BLOCKED: unexpected live-painter file modification"; exit 1
+          fi
+          node --check tests/native-c4-wet-tiles-source-check.cjs
+          node tests/native-c4-wet-tiles-source-check.cjs
+          node --check tests/native-c4-wet-history-browser-check.cjs
+          node --check tests/native-c4-20-wet-stress-browser-check.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Native C4 three wet strokes and exact GPU Undo/Redo + reload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-c4-tiles.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-c4-wet-history-browser-check.cjs
+      - name: Dense watercolor 20 Round/Mop native Undo/Redo + art reload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-c4-tiles-stress.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-c4-20-wet-stress-browser-check.cjs
