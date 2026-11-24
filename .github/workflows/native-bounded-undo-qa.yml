@@ -1,0 +1,53 @@
+name: Undo memory-bound | native 12-stroke painter QA
+on:
+  push:
+    branches: ['repair/undo-memory-bounded-history-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-history:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact head and untouched original tools and saved-art bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check 4fc2b41bbce64f874b9f061dea122c5afb251030 HEAD
+          git diff --name-only 4fc2b41bbce64f874b9f061dea122c5afb251030 HEAD > /tmp/history-files.txt
+          if grep -Ev '^(studio-recovery-20261124/index.html|tests/native-bounded-undo-browser-check.cjs|tests/native-bounded-undo-source-check.cjs|\.github/workflows/native-bounded-undo-qa.yml)$' /tmp/history-files.txt; then
+            echo "UNAUTHORIZED PAINT OR ARTWORK FILE CHANGED"; exit 1
+          fi
+          node tests/native-bounded-undo-source-check.cjs
+          node --check tests/native-bounded-undo-browser-check.cjs
+          node --check tests/recovery-shortcut-bottom-history-check.cjs
+          node --check tests/graphite-three-line-control-browser-check.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Real native 12-stroke Undo and Redo, reload and graphite regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-history-preview.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-bounded-undo-browser-check.cjs
+          node tests/recovery-shortcut-bottom-history-check.cjs
+          node tests/graphite-three-line-control-browser-check.cjs
