@@ -351,3 +351,32 @@
   #app .zshell-graphite-swatches button{font-size:10px;min-height:44px}
   #app .zshell-graphite-disc{width:20px;height:20px}
 }
+
+/* Lyrical Pencil #1: compact high-contrast controls within the original shells. */
+#app .zshell-lyrical-lead{
+  display:block;width:100%;min-height:36px;margin:5px 0 7px;
+  border:1px solid #e3c07d;border-radius:6px;
+  background:#273947;color:#fff0c5;font:800 12px/1.2 system-ui,sans-serif;
+  padding:6px;touch-action:manipulation;
+}
+#app .zshell-lyrical-lead:focus-visible{
+  outline:3px solid #fff7bd;outline-offset:2px;
+}
+#app .zshell-lyrical-controls{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;padding:3px 0 5px;
+}
+#app .zshell-lyrical-controls label{
+  display:flex;flex-direction:column;gap:3px;
+  color:#fff0d2;font:700 11px system-ui,sans-serif;
+  min-width:0;
+}
+#app .zshell-lyrical-controls select,
+#app .zshell-lyrical-controls input{
+  width:100%;box-sizing:border-box;min-height:32px;border-radius:5px;
+  background:#fbf9f1;color:#19252b;font:700 12px system-ui,sans-serif;
+  border:1px solid #baa06d;
+}
+#app .zshell-lyrical-controls input[type=range]{
+  min-height:28px;accent-color:#b58a4b;
+}
