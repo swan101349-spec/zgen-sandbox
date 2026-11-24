@@ -1,0 +1,47 @@
+name: C4 wet watercolor | original painter Undo safety
+on:
+  push:
+    branches: ['qa/c4-wet-history-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-c4-wet:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact-head, no source or artist artwork touched
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check a945b90b9d6106d76307931fc7ba11f6513aef1f HEAD
+          git diff --exit-code a945b90b9d6106d76307931fc7ba11f6513aef1f HEAD -- \
+            studio-recovery-20261124/ index.html original-engine.html shell-v2.html
+          node tests/native-tiled-history-source-check.cjs
+          node --check tests/native-c4-wet-history-browser-check.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Real C4 wet watercolor and graphite Undo/Redo test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-c4-wet-qa.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-c4-wet-history-browser-check.cjs
