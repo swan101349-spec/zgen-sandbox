@@ -90,7 +90,8 @@ async function runView(browser,viewport,label){
  assert.deepEqual(await page.evaluate(()=>window.__C4.snapshot().document?.whole?.rect),
    wetBefore,'Reference import must not alter C4 watercolor document');
  // Gallery must ask before replacing an existing reference.
- await r.click();await toggle.click();
+ if(await page.locator('#zshell-bottom-panel').evaluate(el=>el.hidden))await r.click();
+ if(await toggle.getAttribute('aria-expanded')!=='true')await toggle.click();
  page.once('dialog',async dialog=>{assert(dialog.message().includes('Replace the tracing reference'));await dialog.accept()});
  await page.locator('#zgen-original24-grid .zgen-original24-tile').last().click();
  await page.waitForFunction(expected=>{
