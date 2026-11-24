@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - repair/three-shell-bottom-history-20261124
+      - repair/three-shell-adjacent-history-20261124
   pull_request:
     paths:
       - three-shell.js
