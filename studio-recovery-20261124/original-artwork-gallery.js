@@ -28,10 +28,18 @@
       image.src=new URL(pack.url,document.baseURI).href;
     });
   }
+  let startupChecks=0;
   async function init(){
     const panel=byId('zshell-bottom-panel'),file=byId('file');
     const paint=byId('paint'),reference=byId('reference');
-    if(!panel||!file||!paint||!reference||!window.__ZGEN_BETA_26)return;
+    if(!panel||!file||!paint||!reference)return;
+    if(!window.__ZGEN_BETA_26){
+      // The verified native WebGL2/Canvas painter module can finish AFTER DOM ready.
+      // Reuse its single original instance, never initialize a replacement.
+      if(startupChecks++<80)setTimeout(init,100);
+      else window.__ZGEN_ORIGINAL24_GATE='NATIVE_PAINTER_NOT_READY';
+      return;
+    }
     if(byId('zgen-original-gallery24'))return;
     if(paint.width!==720||paint.height!==1280||reference.width!==720||reference.height!==1280)return;
     try{
