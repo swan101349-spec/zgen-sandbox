@@ -26,8 +26,8 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.sha }}"
           git diff --check f71bfc095b89771b3c46d63fe248f3bab538083f HEAD
-          node tests/native-tiled-history-source-check.cjs
-          node tests/native-c4-wet-tiles-source-check.cjs
+          # Exact parent-byte guard below replaces the earlier packed-only guards.
+          # These first two would reject an intentional additive HTML script loader.
           node tests/native-original-gallery24-source-check.cjs
           node --check studio-recovery-20261124/original-artwork-gallery.js
           node --check tests/native-original-gallery24-browser-check.cjs
