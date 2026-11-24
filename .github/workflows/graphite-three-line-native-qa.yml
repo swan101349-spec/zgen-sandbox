@@ -1,0 +1,48 @@
+name: Pencil three-line shades | native ink + size safety
+on:
+  push:
+    branches: ['feature/three-line-graphite-shades-20261124']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  graphite-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify protected painter, saved art and URL remain unchanged
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check 9c03b04890715d03503ff2457eef8e77fb31ca2f HEAD
+          git diff --exit-code 9c03b04890715d03503ff2457eef8e77fb31ca2f HEAD -- \
+            index.html original-engine.html shell-v2.html \
+            studio-recovery-20261124/index.html \
+            studio-recovery-20261124/artwork-survival.js \
+            studio-recovery-20261124/bounded-fill.js \
+            studio-recovery-20261124/artist-feedback.js
+          node --check studio-recovery-20261124/three-shell.js
+          node --check tests/graphite-three-line-control-browser-check.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Confirm real 3-shade graphite marks, native sizes and watercolor recovery
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-pencil-controls.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/graphite-three-line-control-browser-check.cjs
+          node tests/recovery-shortcut-bottom-history-check.cjs
