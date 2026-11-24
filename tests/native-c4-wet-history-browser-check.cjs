@@ -81,13 +81,26 @@ const capture=()=>{
   assert.equal(redone.reference,base.reference,'Reference unchanged after redo');
   const flushed=await page.evaluate(()=>window.__ZGEN_ART_RECOVERY.flush());
   assert.equal(flushed,true,'Combined graphite and native C4 wet project checkpoint committed');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>window.__C4?.snapshot&&
+    window.__ZGEN_ART_RECOVERY?.status().ready&&!window.__ZGEN_ART_RECOVERY.status().blocked,
+    null,{timeout:45000});
+  // Browser reload must retain both independently editable mixed-media layers.
+  const reopened=await page.evaluate(capture);
+  assert.equal(reopened.graphite,redone.graphite,
+    'Dry graphite survives full browser reload alongside wet watercolor');
+  assert.equal(reopened.reference,redone.reference,
+    'Tracing reference survives mixed-media reload');
+  assert.deepEqual(reopened.canvas,[720,1280],'Original paper dimensions survive reload');
+  assert.ok(Object.values(reopened.layers).some(layer=>layer.nonzero>0),
+    'C4 watercolor pigment must survive IndexedDB restoration after reload');
   assert.deepEqual(errors,[],'No page errors');
   console.log('ZGEN_C4_WET_HISTORY_PASS '+JSON.stringify({
     dryGraphiteBaseline:1,wetWatercolorStrokes:3,undoWet:3,redoWet:3,
     wetArraysRestoreExact:true,graphiteIntact:true,referenceIntact:true,
     maxSteps:redone.metrics.maxSteps,memoryUsageBytes:redone.metrics.estimatedBytes,
     budgetBytes:redone.metrics.memoryLimitBytes,
-    nativeCanvas:redone.canvas,checkpointCommitted:true,physicalDevicePass:false
+    nativeCanvas:redone.canvas,checkpointCommitted:true,wetSurvivesReload:true,graphiteSurvivesReload:true,physicalDevicePass:false
   }));
 })().catch(error=>{console.error('ZGEN_C4_WET_HISTORY_FAIL',error);process.exitCode=1})
   .finally(async()=>{if(browser)await browser.close();fs.rmSync(profile,{recursive:true,force:true})});
