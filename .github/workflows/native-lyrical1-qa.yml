@@ -1,0 +1,49 @@
+name: Lyrical Pencil 1 | native pressure flare + shaded graphite
+on:
+  push:
+    branches: ['integration/lyrical-pencil-one-native-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-lyrical:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source protection and original Rascal assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check 75b02267c284f19bd7a7456831e9e7c44f2f9dc8 HEAD
+          node --check studio-recovery-20261124/lyrical-pencil-one.js
+          node --check studio-recovery-20261124/three-shell.js
+          node --check tests/native-lyrical1-pressure-flare-browser-check.cjs
+          node tests/native-lyrical1-source-check.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Lyrical #1 simulated S Pen pressure, curved flare, Undo/Redo, reload on phone and tablet
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-lyrical1-native.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-lyrical1-pressure-flare-browser-check.cjs
+          node tests/native-c4-wet-history-browser-check.cjs
+          node tests/graphite-three-line-control-browser-check.cjs
