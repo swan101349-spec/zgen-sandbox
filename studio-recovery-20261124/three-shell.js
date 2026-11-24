@@ -260,6 +260,56 @@
     opacity:[1,100],lazy:[0,70],coverage:[0,100],soft:[0,100],strength:[0,100]
   };
   const sizePresets={XS:3,S:10,M:22,L:45,XL:80};
+  // Owner recovery: original painter already accepts delegated data-color
+  // selections. The three tones are native graphite pigments, not CSS filters.
+  const graphiteTones=Object.freeze([
+    {label:'Graphite',name:'Graphite Gray',hex:'#787878'},
+    {label:'Dark',name:'Dark Graphite',hex:'#383838'},
+    {label:'Black',name:'Deep Black',hex:'#080808'}
+  ]);
+  let graphiteTone='#787878';
+  let watercolorColor=null;
+  let lastBrush=window.__ZGEN_BETA_26?.state?.().brush||'round';
+  // Read the actual native paint-color chip, rather than trusting a fake UI
+  // swatch selection or modifying the packed WebGL/Canvas renderer.
+  function liveHex(){
+    const chip=document.querySelector('#chip');
+    const raw=chip?.style.backgroundColor||chip?.style.background||'';
+    const hex=raw.match(/^#([a-f0-9]{6})$/i);
+    if(hex)return '#'+hex[1].toLowerCase();
+    const rgb=raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if(!rgb)return null;
+    return '#'+rgb.slice(1,4).map(v=>Number(v).toString(16).padStart(2,'0')).join('');
+  }
+  function selectNativeColor(hex){
+    if(!/^#[0-9a-f]{6}$/i.test(hex))return false;
+    // The protected engine's already-delegated document click listener owns
+    // pigment selection. Do not add a second paint state or pointer owner.
+    const relay=document.createElement('button');
+    relay.type='button';relay.hidden=true;relay.dataset.color=hex;
+    document.body.append(relay);
+    try{relay.click()}finally{relay.remove()}
+    return liveHex()===hex.toLowerCase();
+  }
+  function refreshToneButtons(){
+    const current=liveHex();
+    adjustPanel.querySelectorAll('[data-graphite-tone]').forEach(button=>{
+      button.setAttribute('aria-pressed',String(button.dataset.graphiteTone===current));
+    });
+  }
+  function syncBrushPigment(){
+    const brush=currentBrush();
+    if(brush===lastBrush)return;
+    const previous=lastBrush;
+    lastBrush=brush;
+    if(brush==='graphite'){
+      watercolorColor=liveHex();
+      selectNativeColor(graphiteTone);
+    }else if(previous==='graphite' && watercolorColor){
+      selectNativeColor(watercolorColor);
+    }
+    if(!adjustPanel.hidden)rebuildAdjustPanel();
+  }
   const adjustButton=document.createElement('button');
   adjustButton.type='button';
   adjustButton.className='zshell-adjust-handle';
@@ -333,9 +383,11 @@
     for(const [name,size] of Object.entries(sizePresets)){
       const button=document.createElement('button');
       button.type='button';
-      button.textContent=name;
+      const letter=document.createElement('strong');letter.textContent=name;
+      const number=document.createElement('small');number.textContent=String(size);
+      button.append(letter,number);
       button.dataset.sizePreset=name;
-      button.setAttribute('aria-label',name+' brush size, '+size+' out of 100');
+      button.setAttribute('aria-label',({XS:'Extra Small',S:'Small',M:'Medium',L:'Large',XL:'Extra Large'})[name]+' brush diameter, '+size+' native size units out of 100');
       button.addEventListener('click',()=>{
         const slider=adjustPanel.querySelector('input[data-setting="size"]');
         if(!slider)return;
@@ -345,8 +397,41 @@
       presets.append(button);
     }
     if(!window.__ZGEN_FILL?.active)adjustPanel.append(presets);
+    // Graphite only: compact, visually distinguishable light/dark/black
+    // swatches INSIDE the ☷ panel. Keep pencil opacity/Lazy/Size as the
+    // original three native sliders and leave the 44-color picker available.
+    if(currentBrush()==='graphite'&&!window.__ZGEN_FILL?.active){
+      const title=document.createElement('div');
+      title.className='zshell-graphite-caption';
+      title.textContent='Graphite shade';
+      const swatches=document.createElement('div');
+      swatches.className='zshell-graphite-swatches';
+      swatches.setAttribute('role','group');
+      swatches.setAttribute('aria-label','Graphite Gray, Dark Graphite, or Black');
+      for(const tone of graphiteTones){
+        const button=document.createElement('button');
+        button.type='button';button.dataset.color=tone.hex;
+        button.dataset.graphiteTone=tone.hex;
+        button.setAttribute('aria-label',tone.name+' pencil shade');
+        button.setAttribute('title',tone.name);
+        const disc=document.createElement('span');
+        disc.className='zshell-graphite-disc';
+        disc.style.backgroundColor=tone.hex;
+        disc.setAttribute('aria-hidden','true');
+        const name=document.createElement('span');name.textContent=tone.label;
+        button.append(disc,name);
+        button.addEventListener('click',()=>{
+          graphiteTone=tone.hex;
+          // Native click bubbles to the original engine, then refresh.
+          queueMicrotask(refreshToneButtons);
+        });
+        swatches.append(button);
+      }
+      adjustPanel.append(title,swatches);
+      refreshToneButtons();
+    }
     const hint=document.createElement('p');hint.className='zshell-adjust-hint';
-    hint.textContent='Changes apply to your next real brush or pencil mark.';
+    hint.textContent='Size numbers are native 1–100 settings, not millimetres. Changes affect the next mark.';
     adjustPanel.append(hint);
     updatePresetState();
   }
@@ -382,8 +467,10 @@
     }
   });
   document.addEventListener('click',event=>{
-    if(event.target.closest('[data-brush]')&&!adjustPanel.hidden){
-      requestAnimationFrame(rebuildAdjustPanel);
+    if(event.target.closest('[data-brush]')){
+      // Runs after the protected native brush click handler. Restore the
+      // previously chosen watercolor pigment when leaving graphite.
+      queueMicrotask(syncBrushPigment);
     }
     // Opening another existing dock or native tool picker closes adjustments.
     if(event.target.closest('.zshell-handle,[data-act]') &&
@@ -405,7 +492,8 @@
     get mode(){return isDrawingBrush()?'drawing':'watercolor'},
     get open(){return !adjustPanel.hidden},
     close:()=>setAdjustOpen(false),
-    get fillSettings(){return {coverage:settings.coverage,soft:settings.soft,strength:settings.strength}}
+    get fillSettings(){return {coverage:settings.coverage,soft:settings.soft,strength:settings.strength}},
+    get graphiteShade(){return currentBrush()==='graphite'?liveHex():graphiteTone}
   };
 
   window.__ZGEN_THREE_SHELL={version:'2026-11-22-auto-fit',paintingModuleModified:false,closeAll,recalculatePaperFit,get viewMode(){return viewMode}};
