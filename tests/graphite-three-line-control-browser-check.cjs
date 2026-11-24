@@ -102,7 +102,9 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     strokes[1].mean>strokes[2].mean+10,
     'Native colored pencil pixels must get progressively DARKER: '+JSON.stringify(strokes));
   // Pencil shade is independent of preselected watercolor palette color.
-  await page.evaluate(()=>document.querySelector('[data-brush="round"]').click());
+  // Round lives inside the existing native Brush Foundry drawer, not a rail.
+  await page.locator('button[data-act="brush"]').first().click();
+  await page.locator('#drawer [data-brush="round"]').click();
   await page.waitForFunction(()=>window.__ZGEN_BETA_26.state().brush==='round');
   await page.waitForFunction(color=>getComputedStyle(document.querySelector('#chip')).backgroundColor===color,
     original,{timeout:5000});
