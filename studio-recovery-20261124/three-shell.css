@@ -312,3 +312,42 @@
 @media(max-width:320px){
   #app .zshell.bottom{width:calc(100vw - 12px)!important}
 }
+
+/* Owner graphite controls: stay INSIDE existing ☷ three-line drawer.
+   Numbers are native 1..100 diameter settings, not a false mm measurement. */
+#app .zshell-adjust-panel .zshell-size-presets button{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:1px;min-height:42px;padding:3px 1px;line-height:1.04;
+}
+#app .zshell-adjust-panel .zshell-size-presets button strong{
+  display:block;font-size:12px;font-weight:850;
+}
+#app .zshell-adjust-panel .zshell-size-presets button small{
+  display:block;font-size:10px;opacity:.93;font-weight:700;
+}
+#app .zshell-graphite-caption{
+  font-size:12px;font-weight:850;color:#ffe6b4;margin:8px 1px 4px;
+}
+#app .zshell-graphite-swatches{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px;margin:0 0 6px;
+}
+#app .zshell-graphite-swatches button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;min-width:0;min-height:48px;padding:3px 1px;
+  border:1px solid #bb9e64;border-radius:7px;
+  background:#263b4b;color:#fff8e8;
+  font:800 11px/1.06 system-ui,sans-serif;touch-action:manipulation;
+}
+#app .zshell-graphite-swatches button[aria-pressed=true]{
+  border:2px solid #fff2a7;background:#354b55;
+  box-shadow:inset 0 0 0 1px #ffc965;
+}
+#app .zshell-graphite-disc{
+  width:22px;height:22px;flex:none;display:block;border-radius:50%;
+  border:2px solid #e8dfca;box-shadow:0 1px 3px #0009;
+}
+@media(max-width:370px){
+  #app .zshell-graphite-swatches button{font-size:10px;min-height:44px}
+  #app .zshell-graphite-disc{width:20px;height:20px}
+}
