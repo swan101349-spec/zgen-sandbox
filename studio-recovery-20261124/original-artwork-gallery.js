@@ -8,24 +8,25 @@
 (() => {
   'use strict';
   const packs=Object.freeze([
-    {id:'graphite',name:'Original Sketchbook',url:'./assets/ghost-sheets/graphite.png'},
-    {id:'rascal',name:'Ms. Rascal + Rascal Cat',url:'./assets/ghost-sheets/rascal.png'}
+    {id:'graphite',name:'Original Sketchbook'},
+    {id:'rascal',name:'Ms. Rascal + Rascal Cat'}
   ]);
   const items=packs.flatMap(pack=>Array.from({length:12},(_,index)=>({
-    pack,index,title:pack.name+' '+String(index+1).padStart(2,'0')
+    pack,index,url:'./assets/gallery24/'+pack.id+'-'+String(index+1).padStart(2,'0')+'.png',
+    title:pack.name+' '+String(index+1).padStart(2,'0')
   })));
   const byId=id=>document.getElementById(id);
-  const sheets=new Map();
+  const originals=new Map();
   const status=()=>byId('status');
   const notify=message=>{const s=status();if(s)s.textContent=message;};
-  function loadOriginal(pack){
+  function loadOriginal(item){
     return new Promise((resolve,reject)=>{
       const image=new Image();
-      image.onload=()=>image.naturalWidth===1448&&image.naturalHeight===1086
-        ?resolve(image):reject(Error('Original 4×3 sheet dimensions changed'));
-      image.onerror=()=>reject(Error('Original sheet is unavailable on this origin'));
+      image.onload=()=>image.naturalWidth===362&&image.naturalHeight===362
+        ?resolve(image):reject(Error('Original individual crop dimensions changed'));
+      image.onerror=()=>reject(Error('Original approved crop is unavailable on this origin'));
       // No authentication token or cross-origin private URL exposed.
-      image.src=new URL(pack.url,document.baseURI).href;
+      image.src=new URL(item.url,document.baseURI).href;
     });
   }
   let startupChecks=0;
@@ -43,12 +44,12 @@
     if(byId('zgen-original-gallery24'))return;
     if(paint.width!==720||paint.height!==1280||reference.width!==720||reference.height!==1280)return;
     try{
-      const images=await Promise.all(packs.map(loadOriginal));
-      images.forEach((image,index)=>sheets.set(packs[index].id,image));
+      const images=await Promise.all(items.map(loadOriginal));
+      images.forEach((image,index)=>originals.set(items[index].url,image));
     }catch{
       // PRIVATE original sheets are not present in a public branch.
       // Fail closed: do not display empty/fake artwork buttons or touch user's painting.
-      window.__ZGEN_ORIGINAL24_GATE='PRIVATE_ASSETS_NOT_PRESENT';
+      window.__ZGEN_ORIGINAL24_GATE='APPROVED_CROP_ASSETS_NOT_PRESENT';
       return;
     }
     const style=document.createElement('style');
@@ -105,11 +106,10 @@
       if(hasReference()&&!window.confirm('Replace the tracing reference with '+item.title+'? Your painting will stay intact.'))return;
       message.textContent='Preparing '+item.title+'…';
       try{
-        const source=sheets.get(item.pack.id);
-        if(!source)throw Error('Original artist sheet unavailable');
+        const source=originals.get(item.url);
+        if(!source)throw Error('Original artist crop unavailable');
         const tile=document.createElement('canvas');tile.width=362;tile.height=362;
-        tile.getContext('2d').drawImage(source,(item.index%4)*362,
-          Math.floor(item.index/4)*362,362,362,0,0,362,362);
+        tile.getContext('2d').drawImage(source,0,0,362,362);
         const blob=await new Promise((resolve,reject)=>tile.toBlob(
           b=>b?resolve(b):reject(Error('Reference crop could not become PNG')),'image/png'));
         const transfer=new DataTransfer();
@@ -133,9 +133,9 @@
         button.className='zgen-original24-tile';
         button.setAttribute('aria-label','Import original '+item.title);
         button.title=item.title;
-        button.style.backgroundImage='url("'+new URL(item.pack.url,document.baseURI).href+'")';
-        button.style.backgroundSize='400% 300%';
-        button.style.backgroundPosition=(item.index%4)*100/3+'% '+Math.floor(item.index/4)*50+'%';
+        button.style.backgroundImage='url("'+new URL(item.url,document.baseURI).href+'")';
+        button.style.backgroundSize='cover';
+        button.style.backgroundPosition='center';
         button.addEventListener('click',()=>select(item));
         grid.appendChild(button);count++;
       }
@@ -157,7 +157,7 @@
       grid.addEventListener(type,event=>{pointers.delete(event.pointerId);if(pointers.size<2)pinch=null;});
     render();
     window.__ZGEN_ORIGINAL24=Object.freeze({installed:24,capacity:120,
-      source:'original-private-sheets-loaded',open:()=>opened(true),close:()=>opened(false)});
+      source:'24-owner-approved-original-crops',open:()=>opened(true),close:()=>opened(false)});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init()},{once:true});
   else init();
