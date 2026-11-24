@@ -1,0 +1,37 @@
+name: Verify immutable Lyrical tablet preview URL | do not deploy
+on:
+  push:
+    branches: ['qa/lyrical-external-preview-link-20261124']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact protected pencil source and no original artist art changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD
+          git diff --exit-code 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD -- studio-recovery-20261124/
+          node --check tests/lyrical-immutable-preview-browser-check.cjs
+          node tests/native-lyrical-sketchy-harmony-source-check.cjs
+      - name: Isolated Chromium browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Inspect outside-origin HTTPS preview response and exercise native pen
+        run: node tests/lyrical-immutable-preview-browser-check.cjs
