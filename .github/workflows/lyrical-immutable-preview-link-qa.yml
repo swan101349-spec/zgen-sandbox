@@ -1,26 +1,27 @@
-name: Verify immutable Lyrical tablet preview URL | do not deploy
+name: Verify immutable Lyrical tablet preview link without deployment
 on:
   push:
-    branches: ['qa/lyrical-external-preview-link-20261124']
+    branches:
+      - qa/lyrical-external-preview-link-20261124
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  immutable-preview:
+  preview-transport:
     runs-on: ubuntu-24.04
     timeout-minutes: 19
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify exact protected pencil source and no original artist art changed
+      - name: Exact SHA and no original painting files changed
         shell: bash
         run: |
           set -euo pipefail
@@ -28,20 +29,21 @@ jobs:
           git diff --check 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD
           git diff --exit-code 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD -- studio-recovery-20261124/
           node --check tests/lyrical-immutable-preview-browser-check.cjs
-          git diff --name-only 4d53f1011145454a0d53a6cee77ffe79fe2f72af HEAD > /tmp/lyrical-preview-changed.txt
-          if grep -Ev '^(tests/lyrical-immutable-preview-browser-check.cjs|\\.github/workflows/lyrical-immutable-preview-link-qa.yml)
-      - name: Isolated Chromium browser
+          python3 - <<'PY'
+          import subprocess
+          before='4d53f1011145454a0d53a6cee77ffe79fe2f72af'
+          changed=subprocess.check_output(
+            ['git','diff','--name-only',before,'HEAD'],text=True).splitlines()
+          allowed={
+            'tests/lyrical-immutable-preview-browser-check.cjs',
+            '.github/workflows/lyrical-immutable-preview-link-qa.yml'
+          }
+          assert set(changed)<=allowed,changed
+          print('ZGEN_PREVIEW_SOURCE_UNCHANGED_PASS',changed)
+          PY
+      - name: Install isolated Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.56.0
           npx playwright install --with-deps chromium
-      - name: Inspect outside-origin HTTPS preview response and exercise native pen
-        run: node tests/lyrical-immutable-preview-browser-check.cjs
- /tmp/lyrical-preview-changed.txt; then
-            echo "BLOCKED: preview QA changed protected native painting files"; exit 1
-          fi
-      - name: Isolated Chromium browser
-        run: |
-          npm install --no-save --no-package-lock playwright@1.56.0
-          npx playwright install --with-deps chromium
-      - name: Inspect outside-origin HTTPS preview response and exercise native pen
+      - name: Verify remote immutable URL and exercise original Lyrical pencil
         run: node tests/lyrical-immutable-preview-browser-check.cjs
