@@ -25,7 +25,7 @@ function isolate(s){
 assert.equal(isolate(before),isolate(after),
   'Only original Sketchy and Harmony visual marks may be modified');
 assert.doesNotThrow(()=>new Function(after),'Native renderer must remain valid JS');
-for(const term of ['stroke.points','Math.sin','now.pressure','ctx.quadraticCurveTo',
+for(const term of ['stroke.points','Math.hypot','now.pressure','ctx.quadraticCurveTo',
     "opts.mode==='sketchy'","opts.mode==='harmony'","function begin(","function move(","function end("]){
   assert(after.includes(term),'Missing original lyrical pressure/curve contract: '+term);
 }
