@@ -84,11 +84,31 @@ async function drawPen(cdp,box){
    page.on('pageerror',e=>exceptions.push(e.message));
    const response=await page.goto(remote+'index.html',{waitUntil:'domcontentloaded',timeout:45000});
    assert.equal(response?.status(),200,'External test page must navigate normally');
-   await page.waitForFunction(()=>window.__ZGEN_LYRICAL_ONE?.ready&&
-     window.__ZGEN_BETA_26?.state&&window.__C4History&&
-     window.__ZGEN_ART_RECOVERY?.status?.().ready&&
-     !window.__ZGEN_ART_RECOVERY.status().blocked,
-     null,{timeout:45000});
+   try {
+     await page.waitForFunction(()=>window.__ZGEN_LYRICAL_ONE?.ready&&
+       window.__ZGEN_BETA_26?.state&&window.__C4History&&
+       window.__ZGEN_ART_RECOVERY?.status?.().ready&&
+       !window.__ZGEN_ART_RECOVERY.status().blocked,
+       null,{timeout:16000});
+   }catch(error){
+     const diagnostics=await page.evaluate(()=>({
+       url:location.href,
+       origin:location.origin,
+       state:document.readyState,
+       title:document.title,
+       scripts:[...document.scripts].map(s=>({src:s.src,loaded:s.readyState})).slice(-10),
+       native:!!window.__ZGEN_BETA_26,
+       lyrical:!!window.__ZGEN_LYRICAL_ONE,
+       history:!!window.__C4History,
+       recovery:window.__ZGEN_ART_RECOVERY?.status?.()||null,
+       indexedDB:!!window.indexedDB,
+       paint:document.querySelector('#paint')?.getAttribute('width')||null,
+       html:document.body?.innerText?.slice(0,550)
+     }));
+     throw new Error('LIVE_PREVIEW_STARTUP_DIAGNOSTICS '+JSON.stringify({
+       diagnostics,exceptions,failures,rootHeaders:response?.headers()
+     })+' | '+error.message);
+   }
    const initial=await page.evaluate(picture);
    assert.deepEqual(initial.dimensions,[720,1280]);
    assert.equal(await page.locator('#paint').count(),1,'No duplicate painter allowed');
