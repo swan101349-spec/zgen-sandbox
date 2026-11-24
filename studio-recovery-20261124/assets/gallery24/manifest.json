@@ -1,0 +1,155 @@
+{
+  "schema": "zgen-owner-approved-gallery24-v1",
+  "approved_for_publication": "2026-11-24",
+  "master_sheets_included": false,
+  "image_resolution": [
+    362,
+    362
+  ],
+  "assets": [
+    {
+      "filename": "graphite-01.png",
+      "sha256": "a003f112f19a86c3b35bf49d4154c600cecce629e4a2e88ee74353c259e3cb4e",
+      "bytes": 145603,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-02.png",
+      "sha256": "bd065ebdffd3f397ff757ea42553031108b47107dd8fd7319a977aba97501361",
+      "bytes": 125864,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-03.png",
+      "sha256": "4e910e54306d55471f825f0ba3d47a57bc8cf5b88095f67317dffcfd56fdfe2b",
+      "bytes": 129108,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-04.png",
+      "sha256": "429070d4c43fba2742f688bf0ff3fe1d656120a9a44e07133f34d34f8aa1d428",
+      "bytes": 135015,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-05.png",
+      "sha256": "ea978393bb85e6d0c6a75400199e6f3ca90d27c42a27ee4fc50e8165e1252293",
+      "bytes": 144357,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-06.png",
+      "sha256": "c0b2b51fe02492c8ea6ce417d9171a49207fc3035b98f57ac73e39274309773d",
+      "bytes": 155596,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-07.png",
+      "sha256": "095afb4b8787cb635171d64f87047a47293beff1dad62da712a9f9ee50ff89de",
+      "bytes": 146989,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-08.png",
+      "sha256": "2f5197a5ad5fd9d1ad9473ab6db4969ecca2a391e7581704b9b3a494ca645275",
+      "bytes": 122071,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-09.png",
+      "sha256": "1796293b98fb042a4be82068a8c267ad829e91fca95841f063c6c3582a78336e",
+      "bytes": 148156,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-10.png",
+      "sha256": "196e34c135909ad723d080c339525c1587c8ea87340b8240efcbecfa451c3a27",
+      "bytes": 158409,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-11.png",
+      "sha256": "00b909c55331f7361e54c7c87b858be1d350880508ec27ccd12be746cd73dd0d",
+      "bytes": 162070,
+      "family": "graphite"
+    },
+    {
+      "filename": "graphite-12.png",
+      "sha256": "56d44fcea42c0b9ad7d4e945588e58bfcc33cf6ea9961b4e6ddf7df7dcea729a",
+      "bytes": 113857,
+      "family": "graphite"
+    },
+    {
+      "filename": "rascal-01.png",
+      "sha256": "614a8d6a603883054b0ae2883cd804b5b4281cfcbd1773116bfef9490ccdaa3f",
+      "bytes": 173061,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-02.png",
+      "sha256": "82f8b0817bac2e96fa66a24114e89fc6aadfc44a3cec40f6e044f1cb241d4157",
+      "bytes": 147352,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-03.png",
+      "sha256": "58539bfb21162537821d8ccb99ffcf56d88bb8fb60caff9a6986139cf3468156",
+      "bytes": 166264,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-04.png",
+      "sha256": "c6f520dccbfea35ba9be40d57f07fc1c88bbf5c90d03903f06bc7488d0050127",
+      "bytes": 145150,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-05.png",
+      "sha256": "62162c7283afaeefcdb60a740a3b2f4ebdfd8f8da0a5386ac319f077206d82bf",
+      "bytes": 181064,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-06.png",
+      "sha256": "072be950d55914db5e523da161c1ac2281d2855b53d82f31aa0644a88299914f",
+      "bytes": 148366,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-07.png",
+      "sha256": "5a672475ec1337b03f4624c4c43060ab72e61aa999035359865b3f003ff88d5d",
+      "bytes": 158301,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-08.png",
+      "sha256": "974fb1e97be58eca6e17650bf497a04e9b983f833df7a161db46720d455048ee",
+      "bytes": 153448,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-09.png",
+      "sha256": "ba8f234571248e865ff67f0ef4cb9a3affbc88f90106d3e9aac7e046a81f9e5e",
+      "bytes": 174720,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-10.png",
+      "sha256": "6f662c79263eb255b19c86569d92f2075f5ad1535b58c2beb152d1fabc3035f8",
+      "bytes": 119107,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-11.png",
+      "sha256": "938970e199a6993a92c24ad09204892110c5302134380c5f613a1ca930b08ede",
+      "bytes": 158838,
+      "family": "rascal"
+    },
+    {
+      "filename": "rascal-12.png",
+      "sha256": "8242227be3f946c8cd3891b0d21371dc8dbb365d7c55a7b9feae3d1ea3396842",
+      "bytes": 136443,
+      "family": "rascal"
+    }
+  ]
+}
