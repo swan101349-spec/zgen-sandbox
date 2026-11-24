@@ -256,3 +256,26 @@
 #app .zshell-rail-swap[aria-pressed=true]{
   background:#f4cc79!important;color:#0d2230!important;border-color:#fff3c5!important
 }
+
+/* Owner November 24: actual native Undo/Redo flank compact lower artwork handle. */
+#app .zshell.bottom .zshell-history-arrow{
+  position:absolute;bottom:0;z-index:2;box-sizing:border-box;
+  width:42px;height:42px;min-width:42px;min-height:42px;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #d4b36e;border-radius:12px;
+  background:#203b4b;color:#fff3d8;
+  font:800 31px/1 system-ui,-apple-system,Roboto,Arial,sans-serif;
+  text-align:center;touch-action:manipulation;
+  box-shadow:0 2px 9px #0008;cursor:pointer;
+}
+#app .zshell.bottom .zshell-history-left{left:-48px}
+#app .zshell.bottom .zshell-history-right{right:-48px}
+#app .zshell.bottom .zshell-history-arrow:disabled{
+  opacity:.42;color:#cbd3d3;cursor:not-allowed;
+}
+#app .zshell.bottom .zshell-history-arrow:focus-visible{
+  outline:3px solid #fff;outline-offset:2px;
+}
+@media(max-width:320px){
+  #app .zshell.bottom{width:min(154px,calc(100vw - 104px))!important}
+}

@@ -1,0 +1,44 @@
+name: C3 Native Bottom Undo Redo Regression
+on:
+  push:
+    branches:
+      - repair/three-shell-bottom-history-20261124
+  pull_request:
+    paths:
+      - three-shell.js
+      - three-shell.css
+      - tests/bottom-history-browser-check.cjs
+      - .github/workflows/bottom-history-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-graphite-history:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Protect original painter and check syntax
+        run: |
+          test "$(git hash-object index.html)" = "8f5138325cb537a146cd2a5909e29126d624aaac"
+          node --check three-shell.js
+          node --check tests/bottom-history-browser-check.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Verify physical button controls and real graphite Undo Redo
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-history-qa.log 2>&1 &
+          srv=$!
+          trap 'kill "$srv" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/index.html >/dev/null && break || sleep 1
+          done
+          node tests/bottom-history-browser-check.cjs

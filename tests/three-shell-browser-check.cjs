@@ -206,13 +206,13 @@ function checkFit(s,name) {
     },fractionY);
     const beforeUndo=await countPaintRegion(.74);
     await page.locator('#zshell-right .zshell-handle').click();
-    await page.locator('#canvas-rail button[data-act=undo]').click();
+    await page.locator('.zshell-history-left').click();
     await page.waitForTimeout(150);
     const afterUndo=await countPaintRegion(.74);
     assert.ok(afterUndo<beforeUndo*.4,
       'real Undo removes most of XL graphite pixels: '+JSON.stringify({beforeUndo,afterUndo}));
     await page.locator('#zshell-right .zshell-handle').click();
-    await page.locator('#canvas-rail button[data-act=redo]').click();
+    await page.locator('.zshell-history-right').click();
     await page.waitForTimeout(150);
     const afterRedo=await countPaintRegion(.74);
     assert.ok(afterRedo>beforeUndo*.65,
