@@ -94,11 +94,11 @@ try{
  assert.deepEqual(stronger.outer,filled.outer,'outside still clean after stronger wash');
  // Real engine undo, redo: compare both reference and paint pixels.
  await page.locator('#zshell-right .zshell-handle').click();
- await page.locator('#canvas-rail button[data-act=undo]').click();
+ await page.locator('.zshell-history-left').click();
  const undone=await pixels();
  assert.deepEqual(undone.center,filled.center,'Undo removes ONLY second wash');
  await page.locator('#zshell-right .zshell-handle').click();
- await page.locator('#canvas-rail button[data-act=redo]').click();
+ await page.locator('.zshell-history-right').click();
  const redone=await pixels();
  assert.deepEqual(redone.center,stronger.center,'Redo restores second wash');
  assert.deepEqual(redone.graphite,refBefore.graphite,'graphite stays after history navigation');
