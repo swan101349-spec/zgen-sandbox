@@ -146,6 +146,15 @@
   }
   subhead(left.panel,'Watercolor & materials');left.panel.append(paint);
   subhead(left.panel,'Pencils, ink & tracing');left.panel.append(drawing);
+  // Premier Lyrical #1 uses the SAME native delegated data-brush handler.
+  // Keep a compact lead-in button, not a second painter or overlay.
+  const lyricalLead=document.createElement('button');
+  lyricalLead.type='button';
+  lyricalLead.dataset.brush='lyrical';
+  lyricalLead.className='zshell-lyrical-lead';
+  lyricalLead.textContent='✎ Lyrical Pencil #1 · pressure flare';
+  lyricalLead.setAttribute('aria-label','Select Lyrical Pencil number one, pressure and tilt expressive graphite');
+  left.panel.append(lyricalLead);
 
   // Favorites are a shell feature only. Clicking a favorite uses the real
   // existing document-level data-brush handler, not a replacement painter.
@@ -168,7 +177,7 @@
   favoritesList.setAttribute('aria-label','Saved brush favorites');
   favoritesWrap.append(starCurrent,favoritesList);
   left.panel.append(favoritesWrap);
-  const brushName=id=>id==='graphite'?'2B Graphite':
+  const brushName=id=>id==='lyrical'?'Lyrical Pencil #1':id==='graphite'?'2B Graphite':
     id==='ink'?'Indian Ink':id.replace(/[-_]/g,' ').split(' ').map(
       word=>word.charAt(0).toUpperCase()+word.slice(1)
     ).join(' ');
@@ -309,10 +318,10 @@
     if(brush===lastBrush)return;
     const previous=lastBrush;
     lastBrush=brush;
-    if(brush==='graphite'){
-      watercolorColor=liveHex();
+    if(brush==='graphite'||brush==='lyrical'){
+      if(previous!=='graphite'&&previous!=='lyrical')watercolorColor=liveHex();
       selectNativeColor(graphiteTone);
-    }else if(previous==='graphite' && watercolorColor){
+    }else if((previous==='graphite'||previous==='lyrical') && watercolorColor){
       selectNativeColor(watercolorColor);
     }
     if(!adjustPanel.hidden)rebuildAdjustPanel();
@@ -334,7 +343,7 @@
     return window.__ZGEN_BETA_26?.state?.().brush || 'round';
   }
   function isDrawingBrush(){
-    return ['ink','graphite'].includes(currentBrush());
+    return ['ink','graphite','lyrical'].includes(currentBrush());
   }
   function readKnownEngineState(){
     const live=window.__ZGEN_BETA_26?.state?.();
@@ -407,7 +416,7 @@
     // Graphite only: compact, visually distinguishable light/dark/black
     // swatches INSIDE the ☷ panel. Keep pencil opacity/Lazy/Size as the
     // original three native sliders and leave the 44-color picker available.
-    if(currentBrush()==='graphite'&&!window.__ZGEN_FILL?.active){
+    if(['graphite','lyrical'].includes(currentBrush())&&!window.__ZGEN_FILL?.active){
       const title=document.createElement('div');
       title.className='zshell-graphite-caption';
       title.textContent='Graphite shade';
@@ -439,8 +448,50 @@
       adjustPanel.append(title,swatches);
       refreshToneButtons();
     }
+    if(currentBrush()==='lyrical'&&!window.__ZGEN_FILL?.active){
+      const api=window.__ZGEN_LYRICAL_ONE;
+      const options=api?.getOptions?.()||{grade:'2B',size:'fine',mode:'graphite',fan:.72};
+      const heading=document.createElement('div');heading.className='zshell-graphite-caption';
+      heading.textContent='Lyrical #1 · pressure + curvature';
+      adjustPanel.append(heading);
+      const row=document.createElement('div');row.className='zshell-lyrical-controls';
+      const fields=[
+        ['grade','Grade',['2H','H','HB','B','2B','4B','6B','8B']],
+        ['size','Point',['xs','fine','standard','wide']],
+        ['mode','Line style',['graphite','harmony','sketchy','shader']]
+      ];
+      for(const [name,label,values] of fields){
+        const wrap=document.createElement('label');
+        wrap.textContent=label;
+        const select=document.createElement('select');
+        select.setAttribute('aria-label','Lyrical '+label);
+        select.dataset.lyrical=name;
+        for(const value of values){
+          const option=document.createElement('option');
+          option.value=value;
+          option.textContent=value==='xs'?'Extra Small':value==='fine'?'Fine Detail':
+            value==='wide'?'Extra Wide':value==='graphite'?'Pure Graphite':
+            value==='harmony'?'Harmony':value==='sketchy'?'Sketchy':value==='shader'?'Shader':value;
+          select.append(option);
+        }
+        select.value=options[name];
+        select.addEventListener('change',()=>{
+          if(!api?.configure?.({[name]:select.value}))select.value=api?.getOptions?.()[name]||options[name];
+        });
+        wrap.append(select);row.append(wrap);
+      }
+      const fanWrap=document.createElement('label');fanWrap.textContent='Flare';
+      const fan=document.createElement('input');fan.type='range';fan.min='0';fan.max='100';
+      fan.step='5';fan.value=String(Math.round(options.fan*100));
+      fan.setAttribute('aria-label','Pressure flare width');fan.dataset.lyrical='fan';
+      fan.addEventListener('input',()=>api?.configure?.({fan:Number(fan.value)/100}));
+      fanWrap.append(fan);row.append(fanWrap);
+      adjustPanel.append(row);
+    }
     const hint=document.createElement('p');hint.className='zshell-adjust-hint';
-    hint.textContent='Size numbers are native 1–100 settings, not millimetres. Changes affect the next mark.';
+    hint.textContent=currentBrush()==='lyrical'
+      ? 'S Pen: press to widen and flare; release pressure to taper. Tilt spreads ribs. Fine loops stay responsive. Size and shade affect the next mark.'
+      : 'Size numbers are native 1–100 settings, not millimetres. Changes affect the next mark.';
     adjustPanel.append(hint);
     updatePresetState();
   }
@@ -502,7 +553,7 @@
     get open(){return !adjustPanel.hidden},
     close:()=>setAdjustOpen(false),
     get fillSettings(){return {coverage:settings.coverage,soft:settings.soft,strength:settings.strength}},
-    get graphiteShade(){return currentBrush()==='graphite'?liveHex():graphiteTone}
+    get graphiteShade(){return ['graphite','lyrical'].includes(currentBrush())?liveHex():graphiteTone}
   };
 
   window.__ZGEN_THREE_SHELL={version:'2026-11-22-auto-fit',paintingModuleModified:false,closeAll,recalculatePaperFit,get viewMode(){return viewMode}};
