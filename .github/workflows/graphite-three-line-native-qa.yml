@@ -25,10 +25,11 @@ jobs:
           git diff --check 9c03b04890715d03503ff2457eef8e77fb31ca2f HEAD
           git diff --exit-code 9c03b04890715d03503ff2457eef8e77fb31ca2f HEAD -- \
             index.html original-engine.html shell-v2.html \
-            studio-recovery-20261124/index.html \
             studio-recovery-20261124/artwork-survival.js \
             studio-recovery-20261124/bounded-fill.js \
             studio-recovery-20261124/artist-feedback.js
+          node --check tests/graphite-native-source-integrity-check.cjs
+          node tests/graphite-native-source-integrity-check.cjs
           node --check studio-recovery-20261124/three-shell.js
           node --check tests/graphite-three-line-control-browser-check.cjs
       - name: Install Chromium
