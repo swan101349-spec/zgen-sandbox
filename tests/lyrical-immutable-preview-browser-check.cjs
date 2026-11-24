@@ -84,6 +84,19 @@ async function drawPen(cdp,box){
    page.on('pageerror',e=>exceptions.push(e.message));
    const response=await page.goto(remote+'index.html',{waitUntil:'domcontentloaded',timeout:45000});
    assert.equal(response?.status(),200,'External test page must navigate normally');
+   if((await page.title()).includes('External Content Notice')){
+     const notice=await page.locator('a').evaluateAll(nodes=>nodes.map(a=>({
+       text:a.textContent.trim(),href:a.getAttribute('href'),target:a.target
+     })));
+     console.log('ZGEN_PREVIEW_NOTICE',JSON.stringify(notice).slice(0,2400));
+     const opener=page.getByText('Open the page',{exact:true});
+     assert.equal(await opener.count(),1,'One explicit consent link should exist');
+     await opener.click();
+     await page.waitForLoadState('domcontentloaded');
+     console.log('ZGEN_PREVIEW_NOTICE_CLEARED',JSON.stringify({
+       title:await page.title(),url:page.url()
+     }));
+   }
    try {
      await page.waitForFunction(()=>window.__ZGEN_LYRICAL_ONE?.ready&&
        window.__ZGEN_BETA_26?.state&&window.__C4History&&
