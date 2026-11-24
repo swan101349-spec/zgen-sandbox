@@ -43,6 +43,10 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await page.locator('[data-graphite-tone="'+hex+'"]').click();
     await page.waitForFunction(target=>window.__ZGEN_BRUSH_CONTROLS.graphiteShade===target,
       hex,{timeout:5000});
+    await page.waitForFunction(target=>{
+      const active=document.querySelector('[data-graphite-tone][aria-pressed="true"]');
+      return active?.dataset.graphiteTone===target;
+    },hex,{timeout:5000});
     assert.equal(await page.locator('[data-graphite-tone][aria-pressed=true]').count(),1);
     assert.equal(await page.locator('[data-graphite-tone="'+hex+'"]').getAttribute('aria-pressed'),'true');
     // Close only the floating ☷ adjustment overlay before making the mark.
