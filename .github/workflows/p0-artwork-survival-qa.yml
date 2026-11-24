@@ -1,0 +1,60 @@
+name: C3 P0 Reference and Artwork Survival Gate
+on:
+  push:
+    branches:
+      - repair/p0-reference-idb-survival-20261124
+    paths:
+      - index.html
+      - three-shell.js
+      - artwork-survival.js
+      - tests/artwork-survival-browser-check.cjs
+      - .github/workflows/p0-artwork-survival-qa.yml
+  pull_request:
+    paths:
+      - index.html
+      - three-shell.js
+      - artwork-survival.js
+      - tests/artwork-survival-browser-check.cjs
+      - .github/workflows/p0-artwork-survival-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check bounded addon syntax and unmodified original painter
+        run: |
+          node --check artwork-survival.js
+          node --check three-shell.js
+          node --check tests/artwork-survival-browser-check.cjs
+          test "$(git hash-object index.html)" = "8f5138325cb537a146cd2a5909e29126d624aaac"
+          cmp index.html shell-v2.html
+      - name: Install real Chromium for reference import and browser-session recovery
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Synthetic PNG import, native C4 checkpoint, reload and fresh browser reopen
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-recovery-qa.log 2>&1 &
+          srv=$!
+          trap 'kill "$srv" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/index.html >/dev/null && break || sleep 1
+          done
+          node tests/artwork-survival-browser-check.cjs
+      - name: Store independent visual QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c3-reference-paint-survival-synthetic
+          path: three-shell-browser-qa/p0-*.png
+          if-no-files-found: ignore

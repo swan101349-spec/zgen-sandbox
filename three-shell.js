@@ -394,3 +394,11 @@
 
   window.__ZGEN_THREE_SHELL={version:'2026-11-22-auto-fit',paintingModuleModified:false,closeAll,recalculatePaperFit,get viewMode(){return viewMode}};
 })();
+
+/* P0 survival helper is isolated and additive; original painter and rails are unchanged. */
+(() => {
+  const script=document.createElement('script');
+  script.src='./artwork-survival.js';
+  script.dataset.zgenRole='artwork-recovery';
+  document.head.appendChild(script);
+})();
