@@ -18,7 +18,7 @@ const grades=Object.freeze({
 });
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const safeColor=v=>/^#[0-9a-f]{6}$/i.test(v||'')?v:'#383838';
-const opts={grade:'2B',size:'fine',fan:.72,mode:'graphite',sensitivity:.65};
+const opts={grade:'2B',size:'fine',fan:.72,mode:'graphite',medium:'dry',sensitivity:.65};
 const sizes=Object.freeze({xs:.37,fine:.67,standard:1,wide:1.7});
 let stroke=null,sequence=0;
 let lastMetrics={strokes:0,segments:0,minWidth:0,maxWidth:0,maxFlare:0,pressureMin:1,pressureMax:0,marks:0};
@@ -318,16 +318,44 @@ function render(ctx,a,b,prior,now,tangent,bend){
   }
   ctx.restore();
 }
+// ONLY the premiere Lyrical #1 graphite style may use ★ in this first C4 gate.
+// The original C1 pointer handler already snapshots DRY + C4 GPU layers
+// before calling begin. No new pointer owner, canvas, or history entry.
+// C4 is the authentic wet pigment shader; never use faux Canvas2D alpha.
+function nativeWetAdapter(settings,geom,pt){
+  const c4=window.__C4;
+  if(!c4 || c4.active || c4.paused ||
+    !['setBrush','setPigment','setWater','setLoad','setSize',
+      'setGranulation','begin','move','end'].every(key=>typeof c4[key]==='function'))
+    return null;
+  const normalized=(key,fallback)=>Number.isFinite(Number(settings[key]))
+    ? clamp(Number(settings[key])/100,0,1) : fallback;
+  try {
+    c4.setBrush('detail'); // Native fine pointed wet brush, no simulated wet mark.
+    c4.setPigment(geom.color);
+    c4.setWater(normalized('water',.68));
+    c4.setLoad(clamp(normalized('pigment',.78)*normalized('opacity',.96),.05,1));
+    c4.setSize(clamp(normalized('size',.22)*(sizes[opts.size]||1),.008,1));
+    c4.setGranulation(normalized('grain',.28));
+    return c4.begin({x:pt.x,y:pt.y,pressure:geom.pressure}) ? c4 : null;
+  }catch {return null;}
+}
 function begin(pt,ev,ctx,settings={}){
   if(stroke||!ctx||ctx.canvas?.id!=='paint')return false;
   if(!Number.isFinite(pt?.x)||!Number.isFinite(pt?.y))return false;
   const t=Number.isFinite(ev.timeStamp)?ev.timeStamp:performance.now();
   const p=sourcePressure(ev,0),geom=parameters(p,sideTilt(ev,0),0,settings);
+  const wet=opts.medium==='watercolor';
+  if(wet&&opts.mode!=='graphite')return false; // Other ★ texture recipes not yet wired.
+  const c4=wet?nativeWetAdapter(settings,geom,pt):null;
+  if(wet&&!c4)return false; // Fail closed; never draw fake water.
   stroke={id:++sequence,points:[{...pt}],prev:{...pt},geom,
-    t,pressure:p,tangent:{x:1,y:0},settings};
+    t,pressure:p,tangent:{x:1,y:0},settings,wet,wetEngine:c4};
   lastMetrics={strokes:lastMetrics.strokes+1,segments:0,minWidth:0,maxWidth:0,maxFlare:0,
-    pressureMin:1,pressureMax:0,marks:0};
-  markTip(ctx,pt,geom);record(geom);
+    pressureMin:1,pressureMax:0,marks:0,wetNative:wet};
+  if(!wet)markTip(ctx,pt,geom);
+  else lastMetrics.marks++; // C4 asynchronously renders the actual GPU pigment.
+  record(geom);
   return true;
 }
 function move(pt,ev,ctx,settings={}){
@@ -342,22 +370,29 @@ function move(pt,ev,ctx,settings={}){
   const tangent={x:dx/dist,y:dy/dist};
   const bend=Math.acos(clamp(stroke.tangent.x*tangent.x+stroke.tangent.y*tangent.y,-1,1));
   const final=parameters(p,sideTilt(ev,speed),bend,settings);
-  const steps=Math.max(1,Math.ceil(dist/2.9));
-  let prior=stroke.geom;
-  for(let i=1;i<=steps;i++){
-    const u=i/steps;
-    const from={x:prev.x+dx*(i-1)/steps,y:prev.y+dy*(i-1)/steps};
-    const to={x:prev.x+dx*u,y:prev.y+dy*u};
-    const interpolated={
-      core:stroke.geom.core+(final.core-stroke.geom.core)*u,
-      flare:stroke.geom.flare+(final.flare-stroke.geom.flare)*u,
-      alpha:stroke.geom.alpha+(final.alpha-stroke.geom.alpha)*u,
-      pressure:stroke.geom.pressure+(final.pressure-stroke.geom.pressure)*u,
-      color:final.color
-    };
-    render(ctx,from,to,prior,interpolated,tangent,bend);
-    prior=interpolated;
-    record(interpolated);
+  if(stroke.wet){
+    // Exact native C4 GPU deposit, same one logical artist gesture.
+    stroke.wetEngine.move({x:pt.x,y:pt.y,pressure:p});
+    lastMetrics.marks++;
+    record(final);
+  }else{
+    const steps=Math.max(1,Math.ceil(dist/2.9));
+    let prior=stroke.geom;
+    for(let i=1;i<=steps;i++){
+      const u=i/steps;
+      const from={x:prev.x+dx*(i-1)/steps,y:prev.y+dy*(i-1)/steps};
+      const to={x:prev.x+dx*u,y:prev.y+dy*u};
+      const interpolated={
+        core:stroke.geom.core+(final.core-stroke.geom.core)*u,
+        flare:stroke.geom.flare+(final.flare-stroke.geom.flare)*u,
+        alpha:stroke.geom.alpha+(final.alpha-stroke.geom.alpha)*u,
+        pressure:stroke.geom.pressure+(final.pressure-stroke.geom.pressure)*u,
+        color:final.color
+      };
+      render(ctx,from,to,prior,interpolated,tangent,bend);
+      prior=interpolated;
+      record(interpolated);
+    }
   }
   stroke.prev={...pt};stroke.geom=final;stroke.pressure=p;stroke.tangent=tangent;
   stroke.t=now;stroke.points.push({...pt});
@@ -366,14 +401,28 @@ function move(pt,ev,ctx,settings={}){
 }
 function end(ctx){
   if(!stroke)return false;
+  if(stroke.wet)stroke.wetEngine.end();
   stroke=null;return true;
 }
-function cancel(){stroke=null;}
+function cancel(){
+  // Native pointer handler owns rollback of original C1 + C4 history after
+  // this call, whether pointercancel, lostpointercapture or two-finger pan.
+  if(stroke?.wet)stroke.wetEngine.end();
+  stroke=null;
+}
 function configure(patch){
   if(stroke||!patch||typeof patch!=='object')return false;
   if(patch.grade!==undefined&&Object.hasOwn(grades,patch.grade))opts.grade=patch.grade;
   if(patch.size!==undefined&&Object.hasOwn(sizes,patch.size))opts.size=patch.size;
-  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross','fabric','cloth'].includes(patch.mode))opts.mode=patch.mode;
+  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross','fabric','cloth'].includes(patch.mode)){
+    opts.mode=patch.mode;
+    if(opts.mode!=='graphite')opts.medium='dry';
+  }
+  if(patch.medium!==undefined){
+    if(patch.medium!=='dry'&&patch.medium!=='watercolor')return false;
+    if(patch.medium==='watercolor'&&opts.mode!=='graphite')return false;
+    opts.medium=patch.medium;
+  }
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
   return true;
 }
