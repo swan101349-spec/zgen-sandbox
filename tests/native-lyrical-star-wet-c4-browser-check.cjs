@@ -76,8 +76,34 @@ for(const viewport of [{width:390,height:844},{width:853,height:533}]){
   const on=await page.evaluate(()=>window.__ZGEN_LYRICAL_ONE.getOptions());
   assert.equal(on.medium,'watercolor');
   assert.equal(on.mode,'graphite','wet only allowed for Lyrical #1');
+  // A user's normal workflow closes the compact adjustment overlay before
+  // touching paper. Otherwise the browser may send stylus events to UI,
+  // hiding an otherwise valid C4 bridge with a false missing-history signal.
+  await page.getByRole('button',{name:'Brush adjustments: three sliders'}).click();
+  assert.equal(await page.locator('#zshell-adjust-panel').evaluate(el=>el.hidden),true,
+    'Close adjustments before using the original painting paper');
+  const hit=await page.evaluate(box=>{
+    const x=box.x+box.width*.22,y=box.y+box.height*.46;
+    const node=document.elementFromPoint(x,y);
+    return {id:node?.id,tag:node?.tagName,classes:node?.className,
+      paint:node?.id==='paint',position:[x,y]};
+  },bounds);
+  assert.equal(hit.paint,true,'The native paper must receive wet stylus input: '+JSON.stringify(hit));
   await stroke(.46); // one ORIGINAL C1 transaction, but ACTUAL C4 GPU wet mark.
-  await page.waitForFunction(()=>window.__C4History().undo.length===2,null,{timeout:10000});
+  try {
+    await page.waitForFunction(()=>window.__C4History().undo.length===2,
+      null,{timeout:10000});
+  }catch(error){
+    const diag=await page.evaluate(()=>({
+      undo:window.__C4History(),mode:window.__ZGEN_LYRICAL_ONE?.getOptions(),
+      pencil:window.__ZGEN_LYRICAL_ONE?.metrics(),
+      c4Active:window.__C4?.active,c4Paused:window.__C4?.paused,
+      c4Phase:window.__C4?.phase,c4Dirty:window.__C4?.dirty,
+      status:document.querySelector('#status')?.textContent
+    }));
+    throw new Error('C4 wet pencil missing native history after pointer stroke: '+
+      JSON.stringify(diag),{cause:error});
+  }
   await page.waitForTimeout(1300);
   await page.evaluate(()=>document.querySelector('[data-act="stop"]').click());
   const wet=await page.evaluate(capture);
