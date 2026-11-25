@@ -90,6 +90,13 @@ for(const viewport of [{width:390,height:844},{width:853,height:533}]){
   },bounds);
   assert.equal(hit.paint,true,'The native paper must receive wet stylus input: '+JSON.stringify(hit));
   await stroke(.46); // one ORIGINAL C1 transaction, but ACTUAL C4 GPU wet mark.
+  // A wet GPU stroke leaves dry #paint untouched. Prevent a false owner
+  // warning from the packed painter's legacy dry-only endpoint sampler.
+  await page.waitForFunction(()=>
+    document.querySelector('#status')?.textContent?.includes('native C4 pigment'),
+    null,{timeout:5000});
+  assert.equal((await page.locator('#status').textContent()).includes('NO PAINT PIXEL'),
+    false,'Never misreport valid C4 pigment as a missing dry paint pixel');
   try {
     await page.waitForFunction(()=>window.__C4History().undo.length===2,
       null,{timeout:10000});
