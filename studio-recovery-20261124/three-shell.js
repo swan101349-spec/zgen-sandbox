@@ -532,6 +532,34 @@
       fan.addEventListener('input',()=>api?.configure?.({fan:Number(fan.value)/100}));
       fanWrap.append(fan);row.append(fanWrap);
       adjustPanel.append(row);
+      // One real C4 watercolor gate on the premier Lyrical #1 only.
+      // Dry texture siblings remain available without pretending to be wet.
+      const star=document.createElement('button');
+      star.type='button';
+      star.dataset.lyrical='medium';
+      star.className='zshell-lyrical-star';
+      star.style.cssText='display:block;width:100%;margin:7px 0 0;padding:7px 9px;min-height:34px;background:#263f51;color:#fff1cb;border:1px solid #d5b56f;border-radius:7px;font-size:13px;font-weight:700';
+      star.setAttribute('aria-label','Toggle Lyrical pencil native C4 watercolor mode');
+      const refreshStar=()=>{
+        const live=api?.getOptions?.()||{};
+        const enabled=live.medium==='watercolor';
+        const allowed=live.mode==='graphite'&&!!window.__C4;
+        star.disabled=!allowed;
+        star.textContent=enabled?'★ Native C4 watercolor · ON':
+          allowed?'☆ Activate native C4 watercolor':'★ Select Pure Graphite for C4 watercolor';
+        star.setAttribute('aria-pressed',String(enabled));
+        star.title='Uses genuine wet GPU pigment, not dry alpha; currently Lyrical #1 only';
+      };
+      star.addEventListener('click',()=>{
+        const mode=api?.getOptions?.().medium;
+        if(api?.configure?.({medium:mode==='watercolor'?'dry':'watercolor'}))refreshStar();
+      });
+      row.querySelector('select[data-lyrical="mode"]')?.addEventListener('change',refreshStar);
+      adjustPanel.append(star);
+      const wetNote=document.createElement('small');
+      wetNote.textContent='★ beta: genuine wet pigment on Lyrical #1 only. Scrub, Cross, Fabric and Cloth stay dry until their own C4 tests.';
+      adjustPanel.append(wetNote);
+      refreshStar();
     }
     const hint=document.createElement('p');hint.className='zshell-adjust-hint';
     hint.textContent=currentBrush()==='lyrical'
