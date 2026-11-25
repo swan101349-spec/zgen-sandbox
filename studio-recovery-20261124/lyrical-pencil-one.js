@@ -401,8 +401,21 @@ function move(pt,ev,ctx,settings={}){
 }
 function end(ctx){
   if(!stroke)return false;
-  if(stroke.wet)stroke.wetEngine.end();
-  stroke=null;return true;
+  const wasNativeWet=stroke.wet;
+  if(wasNativeWet)stroke.wetEngine.end();
+  stroke=null;
+  if(wasNativeWet){
+    // The protected painter's legacy pointerup status samples ONLY dry #paint.
+    // A genuine C4-only mark has no dry pixels, so repair that misleading
+    // message AFTER the original listener finishes. No new pointer handler,
+    // canvas, Undo transaction, observer or fake watercolor is introduced.
+    queueMicrotask(()=>{
+      const status=document.getElementById('status');
+      if(status?.textContent?.startsWith('NO PAINT PIXEL'))
+        status.textContent='Wet pencil stroke sent to native C4 pigment. Undo available.';
+    });
+  }
+  return true;
 }
 function cancel(){
   // Native pointer handler owns rollback of original C1 + C4 history after
