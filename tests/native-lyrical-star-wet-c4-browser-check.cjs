@@ -111,9 +111,14 @@ for(const viewport of [{width:390,height:844},{width:853,height:533}]){
     throw new Error('C4 wet pencil missing native history after pointer stroke: '+
       JSON.stringify(diag),{cause:error});
   }
-  await page.waitForTimeout(1300);
+  // Freeze native C4 before its separate ~1.5 s automatic Dry Wash
+  // checkpoint; otherwise Undo rightly removes the drying boundary instead
+  // of the pencil's single wet stroke, causing a false history failure.
+  await page.waitForTimeout(350);
   await page.evaluate(()=>document.querySelector('[data-act="stop"]').click());
   const wet=await page.evaluate(capture);
+  assert.equal(wet.history.undo.length,2,
+    'Native wet stroke must be the second C1 transaction, not an auto-Dry-Wash boundary');
   assert.deepEqual(wet.size,[720,1280],'native painter backing pixels unchanged');
   assert.equal(wet.paint,dry.paint,'★ must NOT fake watercolor on graphite canvas');
   assert.equal(wet.reference,dry.reference,'reference must not be touched');
