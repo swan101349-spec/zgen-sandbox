@@ -185,10 +185,56 @@ function fabricDry(ctx,a,b,now,tangent){
   }
   ctx.restore();
 }
+
+// Fourth atmospheric pencil: alternating warp and weft graphite threads.
+// A woven grid follows the curve of the artist's gesture. Pressure builds
+// translucent fibers, not a filled shape. Original native C1 history owns it.
+function clothDry(ctx,a,b,now,tangent){
+  const length=Math.hypot(b.x-a.x,b.y-a.y);
+  if(length<.001)return;
+  const nx=-tangent.y,ny=tangent.x;
+  const coverage=clamp((now.core+now.flare)*.95,3,34);
+  const samples=Math.min(14,Math.max(2,Math.ceil(length/2.8)));
+  const threads=clamp(Math.round(2+opts.fan*2),2,4);
+  ctx.save();ctx.strokeStyle=now.color;ctx.lineCap='round';
+  for(let s=0;s<samples;s++){
+    const u=(s+.5)/samples;
+    const cx=a.x+(b.x-a.x)*u,cy=a.y+(b.y-a.y)*u;
+    for(let k=0;k<threads;k++){
+      let seed=(Math.imul(stroke?.id||1,2654435761)^
+        Math.imul(stroke?.points.length||1,2246822519)^
+        Math.imul(s+29,3266489917)^Math.imul(k+53,668265263))>>>0;
+      const rnd=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+      const across=(rnd()-.5)*coverage*1.45;
+      const along=(rnd()-.5)*Math.min(6,coverage*.22);
+      const x=cx+nx*across+tangent.x*along;
+      const y=cy+ny*across+tangent.y*along;
+      // Warp and weft cross at alternating points; never a diagonal
+      // Cross-shader hatch, and never a solid, opaque raster fill.
+      for(const warp of [true,false]){
+        const jitter=(rnd()-.5)*.08;
+        const tx=(warp?tangent.x:nx)*Math.cos(jitter)-
+                 (warp?tangent.y:ny)*Math.sin(jitter);
+        const ty=(warp?tangent.x:nx)*Math.sin(jitter)+
+                 (warp?tangent.y:ny)*Math.cos(jitter);
+        const half=coverage*(warp?.30:.21)*(.72+.25*now.pressure);
+        const x1=clamp(x-tx*half,0,720),y1=clamp(y-ty*half,0,1280);
+        const x2=clamp(x+tx*half,0,720),y2=clamp(y+ty*half,0,1280);
+        if(Math.hypot(x2-x1,y2-y1)<.5)continue;
+        ctx.lineWidth=.44+.16*rnd();
+        ctx.globalAlpha=clamp(now.alpha*(.10+.15*rnd())*(.55+.45*now.pressure),.01,.22);
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        lastMetrics.marks++;
+      }
+    }
+  }
+  ctx.restore();
+}
 function render(ctx,a,b,prior,now,tangent,bend){
   if(opts.mode==='scrub'){scrubDry(ctx,a,b,now,tangent);return;}
   if(opts.mode==='cross'){crossDry(ctx,a,b,now,tangent);return;}
   if(opts.mode==='fabric'){fabricDry(ctx,a,b,now,tangent);return;}
+  if(opts.mode==='cloth'){clothDry(ctx,a,b,now,tangent);return;}
   const nx=-tangent.y,ny=tangent.x;
   ctx.save();
   ctx.strokeStyle=now.color;ctx.lineCap='round';ctx.lineJoin='round';
@@ -327,7 +373,7 @@ function configure(patch){
   if(stroke||!patch||typeof patch!=='object')return false;
   if(patch.grade!==undefined&&Object.hasOwn(grades,patch.grade))opts.grade=patch.grade;
   if(patch.size!==undefined&&Object.hasOwn(sizes,patch.size))opts.size=patch.size;
-  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross','fabric'].includes(patch.mode))opts.mode=patch.mode;
+  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross','fabric','cloth'].includes(patch.mode))opts.mode=patch.mode;
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
   return true;
 }

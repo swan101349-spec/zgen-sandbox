@@ -189,6 +189,17 @@
     window.__ZGEN_LYRICAL_ONE?.configure({mode:'fabric'});
   });
   left.panel.append(fabricLead);
+  // Cloth uses the same dry C1 pencil transaction with woven warp/weft.
+  const clothLead=document.createElement('button');
+  clothLead.type='button';
+  clothLead.className='zshell-lyrical-lead';
+  clothLead.textContent='✎ Cloth Shader · dry woven threads';
+  clothLead.setAttribute('aria-label','Select dry Cloth shader pencil');
+  clothLead.addEventListener('click',()=>{
+    lyricalLead.click();
+    window.__ZGEN_LYRICAL_ONE?.configure({mode:'cloth'});
+  });
+  left.panel.append(clothLead);
 
   // Favorites are a shell feature only. Clicking a favorite uses the real
   // existing document-level data-brush handler, not a replacement painter.
@@ -492,7 +503,7 @@
       const fields=[
         ['grade','Grade',['2H','H','HB','B','2B','4B','6B','8B']],
         ['size','Point',['xs','fine','standard','wide']],
-        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub','cross','fabric']]
+        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub','cross','fabric','cloth']]
       ];
       for(const [name,label,values] of fields){
         const wrap=document.createElement('label');

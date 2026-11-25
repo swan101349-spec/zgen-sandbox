@@ -1,0 +1,63 @@
+name: Native dry Cloth | one-pencil C1 integration
+on:
+  push:
+    branches: ['integration/cloth-dry-native-20261125']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-dry-cloth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact HEAD + protected painter, watercolor, artwork and sources unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=1aea5d80c2613791afc86603bef53dbbb06b1798
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --check "$base" HEAD
+          while IFS= read -r file; do
+            case "$file" in
+              studio-recovery-20261124/lyrical-pencil-one.js|studio-recovery-20261124/three-shell.js|tests/native-cloth-dry-browser-check.cjs|.github/workflows/native-cloth-dry-qa.yml) ;;
+              *) echo "UNEXPECTED_PROTECTED_FILE_CHANGE: $file"; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$base" HEAD)
+          git diff --quiet "$base" HEAD -- studio-recovery-20261124/index.html
+          git diff --quiet "$base" HEAD -- studio-recovery-20261124/artwork-survival.js
+          git diff --quiet "$base" HEAD -- studio-recovery-20261124/original-artwork-gallery.js
+          git diff --quiet "$base" HEAD -- studio-recovery-20261124/assets
+          node --check studio-recovery-20261124/lyrical-pencil-one.js
+          node --check studio-recovery-20261124/three-shell.js
+          node --check tests/native-cloth-dry-browser-check.cjs
+          echo ZGEN_CLOTH_PROTECTED_SOURCE_PASS
+      - name: Install real Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Original Lyrical/Harmony/Sketchy plus new native dry Cloth and reload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-cloth.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/native-lyrical1-pressure-flare-browser-check.cjs
+          node tests/native-lyrical-sketchy-harmony-browser-check.cjs
+          node tests/native-scrub-dry-browser-check.cjs
+          node tests/native-cross-dry-browser-check.cjs
+          node tests/native-fabric-dry-browser-check.cjs
+          node tests/native-cloth-dry-browser-check.cjs
