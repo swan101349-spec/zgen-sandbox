@@ -178,6 +178,17 @@
     window.__ZGEN_LYRICAL_ONE?.configure({mode:'cross'});
   });
   left.panel.append(crossLead);
+  // Fabric is a separate dry line-style of the ORIGINAL lyrical pencil.
+  const fabricLead=document.createElement('button');
+  fabricLead.type='button';
+  fabricLead.className='zshell-lyrical-lead';
+  fabricLead.textContent='✎ Fabric Shader · dry fibers';
+  fabricLead.setAttribute('aria-label','Select dry Fabric shader pencil');
+  fabricLead.addEventListener('click',()=>{
+    lyricalLead.click();
+    window.__ZGEN_LYRICAL_ONE?.configure({mode:'fabric'});
+  });
+  left.panel.append(fabricLead);
 
   // Favorites are a shell feature only. Clicking a favorite uses the real
   // existing document-level data-brush handler, not a replacement painter.
@@ -481,7 +492,7 @@
       const fields=[
         ['grade','Grade',['2H','H','HB','B','2B','4B','6B','8B']],
         ['size','Point',['xs','fine','standard','wide']],
-        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub','cross']]
+        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub','cross','fabric']]
       ];
       for(const [name,label,values] of fields){
         const wrap=document.createElement('label');
