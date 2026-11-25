@@ -23,6 +23,7 @@ function capture(){
     reference:document.querySelector('#reference').toDataURL('image/png'),
     history:window.__C4History(),nativeOptions:window.__ZGEN_LYRICAL_ONE.getOptions(),
     metrics:window.__ZGEN_LYRICAL_ONE.metrics(),
+    nativeWetBrush:window.__C4?.engine?.brush?.id??null,
     size:[document.querySelector('#paint').width,document.querySelector('#paint').height]
   };
 }
@@ -118,6 +119,7 @@ for(const viewport of [{width:390,height:844},{width:853,height:533}]){
   assert.equal(wet.paint,dry.paint,'★ must NOT fake watercolor on graphite canvas');
   assert.equal(wet.reference,dry.reference,'reference must not be touched');
   assert.equal(wet.metrics.wetNative,true,'C4 bridge used');
+  assert.equal(wet.nativeWetBrush,'dry','Actual native C4 textured wet brush selected');
   assert.ok(wet.metrics.marks>wet.metrics.segments,
     'Scrub must send several real textured wet GPU brush samples per stroke segment');
   assert.ok(Object.values(wet.wet).some(layer=>layer.nonzero>0),
