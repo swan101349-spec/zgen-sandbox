@@ -167,6 +167,17 @@
     window.__ZGEN_LYRICAL_ONE?.configure({mode:'scrub'});
   });
   left.panel.append(scrubLead);
+  // Cross extends the same native lyrical C1 route; dry crossed hatches only.
+  const crossLead=document.createElement('button');
+  crossLead.type='button';
+  crossLead.className='zshell-lyrical-lead';
+  crossLead.textContent='✎ Cross Shader · dry crosshatch';
+  crossLead.setAttribute('aria-label','Select dry Cross shader pencil');
+  crossLead.addEventListener('click',()=>{
+    lyricalLead.click();
+    window.__ZGEN_LYRICAL_ONE?.configure({mode:'cross'});
+  });
+  left.panel.append(crossLead);
 
   // Favorites are a shell feature only. Clicking a favorite uses the real
   // existing document-level data-brush handler, not a replacement painter.
@@ -470,7 +481,7 @@
       const fields=[
         ['grade','Grade',['2H','H','HB','B','2B','4B','6B','8B']],
         ['size','Point',['xs','fine','standard','wide']],
-        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub']]
+        ['mode','Line style',['graphite','harmony','sketchy','shader','scrub','cross']]
       ];
       for(const [name,label,values] of fields){
         const wrap=document.createElement('label');

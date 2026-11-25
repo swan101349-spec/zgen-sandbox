@@ -63,7 +63,7 @@ function markTip(ctx,pt,geom){
   ctx.beginPath();ctx.arc(pt.x,pt.y,Math.max(.35,geom.core*.25),0,Math.PI*2);ctx.fill();
   ctx.restore();lastMetrics.marks++;
 }
-// One recovered atmospheric pencil at a time. Dry Scrub uses the
+// Atmospheric dry pencils integrate one at a time. Scrub uses the
 // ORIGINAL native C1 pointer/history transaction, never a second canvas.
 // The geometry follows the private atmospheric pencil's directional recipe:
 // short, rotating translucent marks, scaled by real pen pressure and flare.
@@ -104,8 +104,50 @@ function scrubDry(ctx,a,b,now,tangent){
   }
   ctx.restore();
 }
+
+// Second original atmospheric pencil: two thin crossed graphite hatch
+// directions on every sampled portion of the SAME native C1 stroke.
+// Pressure broadens the X and darkens build-up; geometry stays dry.
+// No second pointer owner, canvas, history transaction or fake wet paint.
+function crossDry(ctx,a,b,now,tangent){
+  const length=Math.hypot(b.x-a.x,b.y-a.y);
+  if(length<.001)return;
+  const nx=-tangent.y,ny=tangent.x;
+  const heading=Math.atan2(tangent.y,tangent.x);
+  const coverage=clamp((now.core+now.flare)*1.15,2.5,34);
+  const samples=Math.min(13,Math.max(2,Math.ceil(length/2.6)));
+  const density=clamp(Math.round(1+opts.fan*2),1,3);
+  ctx.save();ctx.strokeStyle=now.color;ctx.lineCap='round';
+  for(let s=0;s<samples;s++){
+    const u=(s+.5)/samples,baseX=a.x+(b.x-a.x)*u;
+    const baseY=a.y+(b.y-a.y)*u;
+    for(let k=0;k<density;k++){
+      let seed=(Math.imul(stroke?.id||1,2654435761)^
+        Math.imul(stroke?.points.length||1,2246822519)^
+        Math.imul(s+3,3266489917)^Math.imul(k+17,668265263))>>>0;
+      const rnd=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+      const shift=(rnd()-.5)*coverage*1.2;
+      const cx=baseX+nx*shift,cy=baseY+ny*shift;
+      const half=clamp(coverage*(.12+.12*rnd())*(.6+.65*now.pressure),.6,8);
+      for(const side of [-1,1]){
+        // Two oblique directions cross at this exact artist-path sample.
+        const angle=heading+side*(.68+.10*(rnd()-.5));
+        const dx=Math.cos(angle)*half,dy=Math.sin(angle)*half;
+        const x1=clamp(cx-dx,0,720),y1=clamp(cy-dy,0,1280);
+        const x2=clamp(cx+dx,0,720),y2=clamp(cy+dy,0,1280);
+        if(Math.hypot(x2-x1,y2-y1)<.5)continue;
+        ctx.lineWidth=.4+.26*rnd();
+        ctx.globalAlpha=clamp(now.alpha*(.16+.20*rnd())*(.55+.45*now.pressure),.012,.29);
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        lastMetrics.marks++;
+      }
+    }
+  }
+  ctx.restore();
+}
 function render(ctx,a,b,prior,now,tangent,bend){
   if(opts.mode==='scrub'){scrubDry(ctx,a,b,now,tangent);return;}
+  if(opts.mode==='cross'){crossDry(ctx,a,b,now,tangent);return;}
   const nx=-tangent.y,ny=tangent.x;
   ctx.save();
   ctx.strokeStyle=now.color;ctx.lineCap='round';ctx.lineJoin='round';
@@ -244,7 +286,7 @@ function configure(patch){
   if(stroke||!patch||typeof patch!=='object')return false;
   if(patch.grade!==undefined&&Object.hasOwn(grades,patch.grade))opts.grade=patch.grade;
   if(patch.size!==undefined&&Object.hasOwn(sizes,patch.size))opts.size=patch.size;
-  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub'].includes(patch.mode))opts.mode=patch.mode;
+  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross'].includes(patch.mode))opts.mode=patch.mode;
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
   return true;
 }
