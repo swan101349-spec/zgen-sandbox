@@ -331,7 +331,9 @@ function nativeWetAdapter(settings,geom,pt){
   const normalized=(key,fallback)=>Number.isFinite(Number(settings[key]))
     ? clamp(Number(settings[key])/100,0,1) : fallback;
   try {
-    c4.setBrush('detail'); // Native fine pointed wet brush, no simulated wet mark.
+    // The existing C4 WebGL2 shader owns actual water and pigment.
+    // Scrub selects its native dry-texture wet brush head, not Canvas2D alpha.
+    c4.setBrush(opts.mode==='scrub'?'dry':'detail');
     c4.setPigment(geom.color);
     c4.setWater(normalized('water',.68));
     c4.setLoad(clamp(normalized('pigment',.78)*normalized('opacity',.96),.05,1));
@@ -346,7 +348,8 @@ function begin(pt,ev,ctx,settings={}){
   const t=Number.isFinite(ev.timeStamp)?ev.timeStamp:performance.now();
   const p=sourcePressure(ev,0),geom=parameters(p,sideTilt(ev,0),0,settings);
   const wet=opts.medium==='watercolor';
-  if(wet&&opts.mode!=='graphite')return false; // Other ★ texture recipes not yet wired.
+  if(wet&&!['graphite','scrub'].includes(opts.mode))return false;
+  // Only Lyrical #1 and Scrub have genuine C4 ★ bindings in this gate.
   const c4=wet?nativeWetAdapter(settings,geom,pt):null;
   if(wet&&!c4)return false; // Fail closed; never draw fake water.
   stroke={id:++sequence,points:[{...pt}],prev:{...pt},geom,
@@ -372,8 +375,28 @@ function move(pt,ev,ctx,settings={}){
   const final=parameters(p,sideTilt(ev,speed),bend,settings);
   if(stroke.wet){
     // Exact native C4 GPU deposit, same one logical artist gesture.
-    stroke.wetEngine.move({x:pt.x,y:pt.y,pressure:p});
-    lastMetrics.marks++;
+    if(opts.mode==='scrub'){
+      // The original C4 wet GPU engine receives the graphite Scrub's short,
+      // pressure-sized flutter along the artist's curve, one C1 transaction.
+      // Every point deposits real pigment/water through C4's dry-brush head;
+      // no dry #paint pixels, extra painter, input owner or Undo step.
+      const steps=Math.min(4,Math.max(1,Math.ceil(dist/5)));
+      const nx=-tangent.y,ny=tangent.x;
+      const spread=clamp((final.core+final.flare)*.18,.45,6)*p;
+      for(let i=1;i<=steps;i++){
+        const u=i/steps;
+        const n=(stroke.points.length*4+i);
+        const cross=(Math.sin(n*2.3979)*.7+Math.cos(n*1.618)*.3)*spread;
+        const x=clamp(prev.x+dx*u+nx*cross,0,719);
+        const y=clamp(prev.y+dy*u+ny*cross,0,1279);
+        stroke.wetEngine.move({x,y,pressure:clamp(
+          stroke.pressure+(p-stroke.pressure)*u,.035,1)});
+        lastMetrics.marks++;
+      }
+    }else{
+      stroke.wetEngine.move({x:pt.x,y:pt.y,pressure:p});
+      lastMetrics.marks++;
+    }
     record(final);
   }else{
     const steps=Math.max(1,Math.ceil(dist/2.9));
@@ -446,7 +469,7 @@ function configure(patch){
   }
   if(patch.medium!==undefined){
     if(patch.medium!=='dry'&&patch.medium!=='watercolor')return false;
-    if(patch.medium==='watercolor'&&opts.mode!=='graphite')return false;
+    if(patch.medium==='watercolor'&&!['graphite','scrub'].includes(opts.mode))return false;
     opts.medium=patch.medium;
   }
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
