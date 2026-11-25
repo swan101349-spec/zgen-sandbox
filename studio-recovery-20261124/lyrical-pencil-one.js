@@ -318,8 +318,9 @@ function render(ctx,a,b,prior,now,tangent,bend){
   }
   ctx.restore();
 }
-// Lyrical #1 ★ graphite and Scrub use the original C1 history.
-// Scrub uses the distinct native C4 Dry Brush pigment head, not dry alpha.
+// Lyrical #1 ★ graphite, Scrub and Fabric use the original C1 history.
+// Scrub uses native C4 Dry Brush; Fabric uses native C4 Fan hairs.
+// Each is authentic GPU wet pigment, not faux Canvas2D alpha.
 // The original C1 pointer handler already snapshots DRY + C4 GPU layers
 // before calling begin. No new pointer owner, canvas, or history entry.
 // C4 is the authentic wet pigment shader; never use faux Canvas2D alpha.
@@ -332,7 +333,8 @@ function nativeWetAdapter(settings,geom,pt){
   const normalized=(key,fallback)=>Number.isFinite(Number(settings[key]))
     ? clamp(Number(settings[key])/100,0,1) : fallback;
   try {
-    c4.setBrush(opts.mode==='scrub'?'dry':'detail'); // C4 scruffy bristles with genuine wet GPU pigment.
+    const nativeWetHead=opts.mode==='scrub'?'dry':opts.mode==='fabric'?'fan':'detail';
+    c4.setBrush(nativeWetHead); // Original GPU brush geometries, each a distinct actual tip.
     c4.setPigment(geom.color);
     c4.setWater(normalized('water',.68));
     c4.setLoad(clamp(normalized('pigment',.78)*normalized('opacity',.96),.05,1));
@@ -347,7 +349,7 @@ function begin(pt,ev,ctx,settings={}){
   const t=Number.isFinite(ev.timeStamp)?ev.timeStamp:performance.now();
   const p=sourcePressure(ev,0),geom=parameters(p,sideTilt(ev,0),0,settings);
   const wet=opts.medium==='watercolor';
-  if(wet&&!['graphite','scrub'].includes(opts.mode))return false; // Other ★ not wired.
+  if(wet&&!['graphite','scrub','fabric'].includes(opts.mode))return false; // Cross/Cloth ★ not wired.
   const c4=wet?nativeWetAdapter(settings,geom,pt):null;
   if(wet&&!c4)return false; // Fail closed; never draw fake water.
   stroke={id:++sequence,points:[{...pt}],prev:{...pt},geom,
@@ -443,11 +445,11 @@ function configure(patch){
   if(patch.size!==undefined&&Object.hasOwn(sizes,patch.size))opts.size=patch.size;
   if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross','fabric','cloth'].includes(patch.mode)){
     opts.mode=patch.mode;
-    if(!['graphite','scrub'].includes(opts.mode))opts.medium='dry';
+    if(!['graphite','scrub','fabric'].includes(opts.mode))opts.medium='dry';
   }
   if(patch.medium!==undefined){
     if(patch.medium!=='dry'&&patch.medium!=='watercolor')return false;
-    if(patch.medium==='watercolor'&&!['graphite','scrub'].includes(opts.mode))return false;
+    if(patch.medium==='watercolor'&&!['graphite','scrub','fabric'].includes(opts.mode))return false;
     opts.medium=patch.medium;
   }
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
