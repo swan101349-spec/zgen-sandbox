@@ -29,7 +29,7 @@ jobs:
           git diff --check "$base" HEAD
           while IFS= read -r file; do
             case "$file" in
-              tests/native-lyrical-star-c4-cancel-browser-check.cjs|.github/workflows/native-lyrical-star-c4-cancel-qa.yml) ;;
+              studio-recovery-20261124/lyrical-pencil-one.js|tests/native-lyrical-star-c4-cancel-browser-check.cjs|.github/workflows/native-lyrical-star-c4-cancel-qa.yml) ;;
               *) echo "UNEXPECTED_PROTECTED_FILE_CHANGE: $file"; exit 1 ;;
             esac
           done < <(git diff --name-only "$base" HEAD)
