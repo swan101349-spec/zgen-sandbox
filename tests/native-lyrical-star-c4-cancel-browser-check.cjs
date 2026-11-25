@@ -151,6 +151,10 @@ try{
     const restored=await page.evaluate(snap);
     assert.equal(restored.graphite,withDry.graphite,'pre-cancel dry art redo still exact');
     assert.deepEqual(restored.wet,withDry.wet);
+    assert.equal(restored.history.undo.length,1,
+      'Redo must restore ONE native baseline action, not duplicate it: '+JSON.stringify(restored.history));
+    assert.equal(restored.history.redo.length,0,
+      'Redo branch must be exhausted exactly once after cancel');
     // Then prove the original C4 GPU bridge is still usable for valid wet art.
     await pen(.69);
     await page.waitForTimeout(1700);
@@ -159,7 +163,8 @@ try{
     assert.equal(validWet.graphite,restored.graphite,'new C4 stroke must not affect dry art');
     assert.ok(Object.values(validWet.wet).some(x=>x.nonzero>0),
       'genuine C4 wet GPU pigment still deposits after cancellation');
-    assert.equal(validWet.history.undo.length,2);
+    assert.equal(validWet.history.undo.length,2,
+      'Successful wet pencil must commit EXACTLY ONE C1 action after restored dry baseline: '+JSON.stringify({baseline:restored.history,after:validWet.history}));
     await page.locator('.zshell-history-left').click();
     assert.deepEqual((await page.evaluate(snap)).wet,restored.wet,
       'Undo exact after both cancellation paths');
