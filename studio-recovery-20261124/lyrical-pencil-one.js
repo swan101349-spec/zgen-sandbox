@@ -145,9 +145,50 @@ function crossDry(ctx,a,b,now,tangent){
   }
   ctx.restore();
 }
+
+// Third atmospheric pencil: individual lengthwise graphite fibers.
+// Fine parallel threads float along the artist's trajectory, with slight
+// flutter and pressure-dependent deposition. Fully dry native C1 marks.
+function fabricDry(ctx,a,b,now,tangent){
+  const length=Math.hypot(b.x-a.x,b.y-a.y);
+  if(length<.001)return;
+  const nx=-tangent.y,ny=tangent.x;
+  const coverage=clamp((now.core+now.flare)*1.05,3,36);
+  const samples=Math.min(15,Math.max(2,Math.ceil(length/3)));
+  const fibers=clamp(Math.round(2+opts.fan*3),2,5);
+  ctx.save();ctx.strokeStyle=now.color;ctx.lineCap='round';
+  for(let s=0;s<samples;s++){
+    const u=(s+.5)/samples;
+    const cx=a.x+(b.x-a.x)*u,cy=a.y+(b.y-a.y)*u;
+    for(let k=0;k<fibers;k++){
+      let seed=(Math.imul(stroke?.id||1,2654435761)^
+        Math.imul(stroke?.points.length||1,2246822519)^
+        Math.imul(s+11,3266489917)^Math.imul(k+31,668265263))>>>0;
+      const rnd=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+      const across=(rnd()-.5)*coverage*1.4;
+      const along=(rnd()-.5)*Math.min(8,coverage*.32);
+      const x=cx+nx*across+tangent.x*along;
+      const y=cy+ny*across+tangent.y*along;
+      const span=coverage*(.56+.4*rnd())*(.7+.4*now.pressure);
+      const angle=(rnd()-.5)*.14;
+      const tx=tangent.x*Math.cos(angle)-tangent.y*Math.sin(angle);
+      const ty=tangent.x*Math.sin(angle)+tangent.y*Math.cos(angle);
+      const half=span*.5;
+      const x1=clamp(x-tx*half,0,720),y1=clamp(y-ty*half,0,1280);
+      const x2=clamp(x+tx*half,0,720),y2=clamp(y+ty*half,0,1280);
+      if(Math.hypot(x2-x1,y2-y1)<.5)continue;
+      ctx.lineWidth=.36+.2*rnd();
+      ctx.globalAlpha=clamp(now.alpha*(.11+.17*rnd())*(.58+.42*now.pressure),.01,.24);
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      lastMetrics.marks++;
+    }
+  }
+  ctx.restore();
+}
 function render(ctx,a,b,prior,now,tangent,bend){
   if(opts.mode==='scrub'){scrubDry(ctx,a,b,now,tangent);return;}
   if(opts.mode==='cross'){crossDry(ctx,a,b,now,tangent);return;}
+  if(opts.mode==='fabric'){fabricDry(ctx,a,b,now,tangent);return;}
   const nx=-tangent.y,ny=tangent.x;
   ctx.save();
   ctx.strokeStyle=now.color;ctx.lineCap='round';ctx.lineJoin='round';
@@ -286,7 +327,7 @@ function configure(patch){
   if(stroke||!patch||typeof patch!=='object')return false;
   if(patch.grade!==undefined&&Object.hasOwn(grades,patch.grade))opts.grade=patch.grade;
   if(patch.size!==undefined&&Object.hasOwn(sizes,patch.size))opts.size=patch.size;
-  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross'].includes(patch.mode))opts.mode=patch.mode;
+  if(patch.mode!==undefined&&['graphite','harmony','sketchy','shader','scrub','cross','fabric'].includes(patch.mode))opts.mode=patch.mode;
   if(patch.fan!==undefined&&Number.isFinite(Number(patch.fan)))opts.fan=clamp(Number(patch.fan),0,1);
   return true;
 }
