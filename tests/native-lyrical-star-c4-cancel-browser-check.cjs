@@ -111,6 +111,8 @@ try{
       'pointercancel restores native undo AND redo branch exactly');
     assert.equal(canceled.draw,false,'original lyrical stroke is closed');
     assert.equal(canceled.active,false,'native C4 stroke is no longer active');
+    assert.equal(await page.locator('.zshell-history-right').isEnabled(),true,
+      'original Redo arrow is enabled after pointercancel history rollback');
     await page.waitForTimeout(1100);
     assert.deepEqual((await page.evaluate(snap)).wet,undoneDry.wet,
       'no late GPU pigment may leak after canceled pen stroke');
@@ -139,6 +141,8 @@ try{
     assert.deepEqual(gesture.history,undoneDry.history,
       'two-finger abort restores previous redo branch without extra native Undo');
     assert.equal(gesture.active,false);
+    assert.equal(await page.locator('.zshell-history-right').isEnabled(),true,
+      'original Redo arrow stays enabled after second-finger history rollback');
     await page.waitForTimeout(1000);
     assert.deepEqual((await page.evaluate(snap)).wet,undoneDry.wet,
       'two-finger cancellation leaves no delayed wet pigment');
