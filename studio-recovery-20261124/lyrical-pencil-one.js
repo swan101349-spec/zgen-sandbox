@@ -318,7 +318,7 @@ function render(ctx,a,b,prior,now,tangent,bend){
   }
   ctx.restore();
 }
-// Lyrical #1 ★ graphite and Scrub use the original C1 history. 
+// Lyrical #1 ★ graphite and Scrub use the original C1 history.
 // Scrub uses the distinct native C4 Dry Brush pigment head, not dry alpha.
 // The original C1 pointer handler already snapshots DRY + C4 GPU layers
 // before calling begin. No new pointer owner, canvas, or history entry.
