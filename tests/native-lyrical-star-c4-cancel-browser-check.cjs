@@ -157,14 +157,19 @@ try{
       'Redo branch must be exhausted exactly once after cancel');
     // Then prove the original C4 GPU bridge is still usable for valid wet art.
     await pen(.69);
-    await page.waitForTimeout(1700);
+    // Distinguish ONE genuine logical C1 wet pencil stroke from C4's
+    // intentional SECOND 'dry' history checkpoint after auto-settle (1.5s).
+    // Freeze the original watercolor engine BEFORE the natural dry boundary.
+    await page.waitForFunction(()=>window.__C4History().undo.length===2,
+      null,{timeout:10000});
+    await page.waitForTimeout(350);
     await page.evaluate(()=>document.querySelector('[data-act="stop"]').click());
     const validWet=await page.evaluate(snap);
     assert.equal(validWet.graphite,restored.graphite,'new C4 stroke must not affect dry art');
     assert.ok(Object.values(validWet.wet).some(x=>x.nonzero>0),
       'genuine C4 wet GPU pigment still deposits after cancellation');
     assert.equal(validWet.history.undo.length,2,
-      'Successful wet pencil must commit EXACTLY ONE C1 action after restored dry baseline: '+JSON.stringify({baseline:restored.history,after:validWet.history}));
+      'Before C4 Dry Wash checkpoint, a valid wet pencil must commit exactly ONE native C1 action: '+JSON.stringify({baseline:restored.history,after:validWet.history}));
     await page.locator('.zshell-history-left').click();
     assert.deepEqual((await page.evaluate(snap)).wet,restored.wet,
       'Undo exact after both cancellation paths');
