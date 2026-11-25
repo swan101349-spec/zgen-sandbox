@@ -40,7 +40,7 @@ jobs:
           node --check studio-recovery-20261124/lyrical-pencil-one.js
           node --check studio-recovery-20261124/three-shell.js
           node --check tests/native-cross-dry-browser-check.cjs
-          echo ZGEN_SCRUB_PROTECTED_SOURCE_PASS
+          echo ZGEN_CROSS_PROTECTED_SOURCE_PASS
       - name: Install real Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.56.0
