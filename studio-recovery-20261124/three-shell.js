@@ -532,8 +532,8 @@
       fan.addEventListener('input',()=>api?.configure?.({fan:Number(fan.value)/100}));
       fanWrap.append(fan);row.append(fanWrap);
       adjustPanel.append(row);
-      // One real C4 watercolor gate on the premier Lyrical #1 only.
-      // Dry texture siblings remain available without pretending to be wet.
+      // Authentic C4 pigment gate for graphite and Scrub only.
+      // Cross/Fabric/Cloth retain their dry geometry until separately proven.
       const star=document.createElement('button');
       star.type='button';
       star.dataset.lyrical='medium';
@@ -543,12 +543,12 @@
       const refreshStar=()=>{
         const live=api?.getOptions?.()||{};
         const enabled=live.medium==='watercolor';
-        const allowed=live.mode==='graphite'&&!!window.__C4;
+        const allowed=['graphite','scrub'].includes(live.mode)&&!!window.__C4;
         star.disabled=!allowed;
-        star.textContent=enabled?'★ Native C4 watercolor · ON':
-          allowed?'☆ Activate native C4 watercolor':'★ Select Pure Graphite for C4 watercolor';
+        star.textContent=enabled?(live.mode==='scrub'?'★ C4 watercolor Scrub · ON':'★ Native C4 watercolor · ON'):
+          allowed?'☆ Activate native C4 watercolor':'★ Select Graphite or Scrub for C4 watercolor';
         star.setAttribute('aria-pressed',String(enabled));
-        star.title='Uses genuine wet GPU pigment, not dry alpha; currently Lyrical #1 only';
+        star.title='Uses genuine C4 wet GPU pigment; Graphite=Detail tip, Scrub=Dry Brush scruffy native bristles';
       };
       star.addEventListener('click',()=>{
         const mode=api?.getOptions?.().medium;
@@ -557,7 +557,7 @@
       row.querySelector('select[data-lyrical="mode"]')?.addEventListener('change',refreshStar);
       adjustPanel.append(star);
       const wetNote=document.createElement('small');
-      wetNote.textContent='★ beta: genuine wet pigment on Lyrical #1 only. Scrub, Cross, Fabric and Cloth stay dry until their own C4 tests.';
+      wetNote.textContent='★ beta: true C4 wet pigment on Graphite or Scrub (Dry Brush head). Cross, Fabric and Cloth remain dry.';
       adjustPanel.append(wetNote);
       refreshStar();
     }
