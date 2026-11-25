@@ -418,10 +418,23 @@ function end(ctx){
   return true;
 }
 function cancel(){
-  // Native pointer handler owns rollback of original C1 + C4 history after
-  // this call, whether pointercancel, lostpointercapture or two-finger pan.
+  // The original C1 native pointer handler rolls back the real dry+C4 GPU
+  // history AFTER this callback returns. It restores the saved redo ARRAY
+  // after its own UI refresh, leaving the original Redo arrow disabled.
+  // Reconcile only the already-existing history arrows after that event turn.
+  // No second input owner, history stack, canvas or C4 GPU edit is created.
   if(stroke?.wet)stroke.wetEngine.end();
   stroke=null;
+  queueMicrotask(()=>{
+    const h=window.__C4History?.();
+    if(!h)return;
+    document.querySelectorAll('[data-act="undo"]').forEach(b=>{
+      b.disabled=!h.undo?.length;
+    });
+    document.querySelectorAll('[data-act="redo"]').forEach(b=>{
+      b.disabled=!h.redo?.length;
+    });
+  });
 }
 function configure(patch){
   if(stroke||!patch||typeof patch!=='object')return false;
