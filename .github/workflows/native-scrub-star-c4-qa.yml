@@ -29,7 +29,7 @@ jobs:
           git diff --check "$base" HEAD
           while IFS= read -r file; do
             case "$file" in
-              studio-recovery-20261124/lyrical-pencil-one.js|studio-recovery-20261124/three-shell.js|tests/native-scrub-star-c4-browser-check.cjs|.github/workflows/native-scrub-star-c4-qa.yml) ;;
+              studio-recovery-20261124/lyrical-pencil-one.js|studio-recovery-20261124/three-shell.js|tests/native-scrub-star-c4-browser-check.cjs|tests/native-lyrical-star-wet-c4-browser-check.cjs|.github/workflows/native-scrub-star-c4-qa.yml) ;;
               *) echo "UNEXPECTED_PROTECTED_FILE_CHANGE: $file"; exit 1 ;;
             esac
           done < <(git diff --name-only "$base" HEAD)
@@ -40,6 +40,7 @@ jobs:
           node --check studio-recovery-20261124/lyrical-pencil-one.js
           node --check studio-recovery-20261124/three-shell.js
           node --check tests/native-scrub-star-c4-browser-check.cjs
+          node --check tests/native-lyrical-star-wet-c4-browser-check.cjs
           echo ZGEN_SCRUB_STAR_C4_PROTECTED_SOURCE_PASS
       - name: Install real Chromium
         run: |
