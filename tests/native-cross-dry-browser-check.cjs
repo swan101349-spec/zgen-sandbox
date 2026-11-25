@@ -72,7 +72,7 @@ for(const viewport of [{width:390,height:844},{width:853,height:533}]){
   assert.equal(await page.locator('#paint').evaluate(el=>el.width),720);
   assert.equal(await page.locator('#paint').evaluate(el=>el.height),1280);
   assert.deepEqual(errors,[],'No browser errors');
-  console.log('ZGEN_NATIVE_DRY_SCRUB_PASS '+JSON.stringify({
+  console.log('ZGEN_NATIVE_DRY_CROSS_PASS '+JSON.stringify({
     viewport,realC1Pixels:true,originalUndoRedoExact:true,
     savedArtReload:true,referenceUnchanged:true,ownerSPenTested:false,
     watercolorStarSupported:false,liveDeployed:false
@@ -80,4 +80,4 @@ for(const viewport of [{width:390,height:844},{width:853,height:533}]){
   await context.close();
 }
 }finally{await browser.close()}
-})().catch(e=>{console.error('ZGEN_NATIVE_DRY_SCRUB_FAIL',e);process.exitCode=1});
+})().catch(e=>{console.error('ZGEN_NATIVE_DRY_CROSS_FAIL',e);process.exitCode=1});
