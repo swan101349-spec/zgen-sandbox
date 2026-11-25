@@ -543,12 +543,12 @@
       const refreshStar=()=>{
         const live=api?.getOptions?.()||{};
         const enabled=live.medium==='watercolor';
-        const allowed=live.mode==='graphite'&&!!window.__C4;
+        const allowed=['graphite','scrub'].includes(live.mode)&&!!window.__C4;
         star.disabled=!allowed;
         star.textContent=enabled?'★ Native C4 watercolor · ON':
-          allowed?'☆ Activate native C4 watercolor':'★ Select Pure Graphite for C4 watercolor';
+          allowed?'☆ Activate native C4 watercolor':'★ Choose Lyrical or Scrub for C4 watercolor';
         star.setAttribute('aria-pressed',String(enabled));
-        star.title='Uses genuine wet GPU pigment, not dry alpha; currently Lyrical #1 only';
+        star.title='Real C4 WebGL2 wet pigment, not dry alpha; Lyrical #1 and Scrub only';
       };
       star.addEventListener('click',()=>{
         const mode=api?.getOptions?.().medium;
@@ -557,7 +557,7 @@
       row.querySelector('select[data-lyrical="mode"]')?.addEventListener('change',refreshStar);
       adjustPanel.append(star);
       const wetNote=document.createElement('small');
-      wetNote.textContent='★ beta: genuine wet pigment on Lyrical #1 only. Scrub, Cross, Fabric and Cloth stay dry until their own C4 tests.';
+      wetNote.textContent='★ beta: genuine C4 watercolor for Lyrical #1 and textured Scrub. Cross, Fabric and Cloth stay dry pending C4 tests.';
       adjustPanel.append(wetNote);
       refreshStar();
     }
