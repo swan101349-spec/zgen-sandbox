@@ -26,16 +26,16 @@ function capture(){
  browser=await chromium.launch({headless:true,args:[
   '--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  for(const viewport of [{width:390,height:844},{width:800,height:1100}]){
-  const context=await browser.newContext({viewport,hasTouch:true,isMobile:true,deviceScaleFactor:1});
-  const page=await context.newPage(),errors=[],downloads=[];
+  let context=await browser.newContext({viewport,hasTouch:true,isMobile:true,deviceScaleFactor:1});
+  let page=await context.newPage();const errors=[],downloads=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('download',d=>downloads.push(d));
   await page.goto('http://127.0.0.1:8765/studio-recovery-20261124/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__ZGEN_FILL?.identifyRegion&&window.__ZGEN_FILL_BRIDGE&&
    window.__C4?.snapshot&&window.__C4History&&window.__ZGEN_ART_RECOVERY?.status().ready&&
    !window.__ZGEN_ART_RECOVERY.status().blocked,null,{timeout:45000});
-  const left=page.locator('#zshell-left .zshell-handle');
-  const fill=page.locator('.zgen-fill-toggle'),adjust=page.locator('.zshell-adjust-handle');
+  let left=page.locator('#zshell-left .zshell-handle');
+  let fill=page.locator('.zgen-fill-toggle'),adjust=page.locator('.zshell-adjust-handle');
   const openFill=async()=>{
    if(await fill.getAttribute('aria-pressed')!=='true'){
     await left.tap();await fill.tap();
@@ -129,9 +129,17 @@ function capture(){
     noPainterSourceModification:true,mixedFillAccepted:false
   }));
 
-  // Separate disposable browser page: positive Fill contract on CLEAN C4 state.
+  // Separate disposable context: positive Fill contract on CLEAN C4 state.
+  // New context prevents the legitimate saved wet artwork from being reloaded.
   // Never remove STOP or wet-dirty guards to manufacture a mixed wet PASS.
-  await page.reload({waitUntil:'domcontentloaded'});
+  await context.close();
+  context=await browser.newContext({viewport,hasTouch:true,isMobile:true,deviceScaleFactor:1});
+  page=await context.newPage();
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('download',d=>downloads.push(d));
+  left=page.locator('#zshell-left .zshell-handle');
+  fill=page.locator('.zgen-fill-toggle');adjust=page.locator('.zshell-adjust-handle');
+  await page.goto('http://127.0.0.1:8765/studio-recovery-20261124/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__ZGEN_FILL?.identifyRegion&&window.__ZGEN_FILL_BRIDGE&&
     window.__C4?.snapshot&&window.__C4History&&window.__ZGEN_ART_RECOVERY?.status().ready&&
     !window.__ZGEN_ART_RECOVERY.status().blocked,null,{timeout:45000});
