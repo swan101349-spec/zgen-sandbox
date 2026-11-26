@@ -1,0 +1,57 @@
+name: JOB-E C4 | intermediate numeric diameter real wet brush matrix
+on:
+  push:
+    branches: [qa/job-e-five-head-middle-diameters-20261126]
+permissions:
+  contents: read
+jobs:
+  per-head-middle-diameters:
+    strategy:
+      fail-fast: false
+      matrix:
+        head: [round, mop, flat, rigger, sponge]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    name: C4 middle diameters ${{ matrix.head }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact source head and QA only diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only aa28f789a003ff4043932dfcf9a0262c1039f228 HEAD >/tmp/zgen-job-e-middle-files
+          python3 - <<'PY'
+          from pathlib import Path
+          files=set(Path('/tmp/zgen-job-e-middle-files').read_text().splitlines())
+          expected={'tests/job-e-wet-middle-size-matrix.cjs',
+                    '.github/workflows/job-e-wet-middle-size-matrix.yml'}
+          assert files==expected,(files,expected)
+          print('ZGEN_JOB_E_MIDDLE_SIZES_QA_SCOPE_PASS',sorted(files))
+          PY
+          git diff --quiet aa28f789a003ff4043932dfcf9a0262c1039f228 HEAD -- studio-recovery-20261124/
+          node --check tests/job-e-wet-middle-size-matrix.cjs
+      - name: Install isolated browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Three actual C4 marks at diameters 25 45 60
+        env:
+          ZGEN_BRUSH: ${{ matrix.head }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-e-middle-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-wet-middle-size-matrix.cjs
