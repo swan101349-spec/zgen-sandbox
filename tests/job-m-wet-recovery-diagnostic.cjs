@@ -32,6 +32,41 @@ let browser;
    referenceOpacity:document.querySelector('#reference').style.opacity,
    history:window.__C4History(),statusText:document.querySelector('#status')?.textContent};
  });
+ const persisted=()=>page.evaluate(async()=>{
+  const database=await new Promise((resolve,reject)=>{
+   const req=indexedDB.open('ZGenArtStudio-ThreeShell-Recovery',1);
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+  let record;
+  try{
+   record=await new Promise((resolve,reject)=>{
+    const tx=database.transaction('artwork','readonly'),
+      req=tx.objectStore('artwork').get('current-v1');
+    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+   });
+  }finally{database.close();}
+  const fingerprint=layers=>{
+   const output={};
+   for(const [key,arr] of Object.entries(layers||{})){
+    let h=2166136261,nonzero=0;
+    for(let i=0;i<arr.length;i++){h=Math.imul(h^arr[i],16777619);if(arr[i])nonzero++;}
+    output[key]={hash:h>>>0,nonzero,length:arr.length};
+   }
+   return output;
+  };
+  const live=window.__C4.snapshot().document.whole.layers;
+  const fromStorage=record?.wet?.document?.whole?.layers;
+  const wetFingerprint=fingerprint(fromStorage);
+  const liveFingerprint=fingerprint(live);
+  return {
+   exists:!!record,updated:record?.updated??null,
+   paintMatches:record?.paint===document.querySelector('#paint').toDataURL('image/png'),
+   referenceMatches:record?.reference===document.querySelector('#reference').toDataURL('image/png'),
+   wetLayerCount:Object.keys(wetFingerprint).length,
+   wetLayersExactHash:JSON.stringify(wetFingerprint)===JSON.stringify(liveFingerprint),
+   liveFingerprint,storedFingerprint:wetFingerprint
+  };
+ });
  const init=await state();
  assert.equal(init.recovery.savedAt,null,'Fresh disposable browser must have no checkpoint');
  await page.evaluate(()=>{
@@ -60,6 +95,10 @@ let browser;
  await page.waitForTimeout(4500);
  const automatic=await state();
  const autoSaved=automatic.recovery.savedAt!==null;
+ const autoRecord=await persisted();
+ const autoBytesMatch=autoRecord.exists && autoRecord.paintMatches &&
+   autoRecord.referenceMatches && autoRecord.wetLayersExactHash &&
+   autoRecord.wetLayerCount===5;
  console.log('ZGEN_JOB_M_AUTOSAVE_AFTER_SETTLE_DIAGNOSTIC',JSON.stringify({
   initialSavedAt:init.recovery.savedAt,
   early:{phase:early.wet.phase,active:early.wet.active,lastError:early.recovery.lastError},
@@ -67,7 +106,7 @@ let browser;
    hostActive:automatic.wet.hostActive,hostFixing:automatic.wet.hostFixing,
    savedAt:automatic.recovery.savedAt,lastError:automatic.recovery.lastError,
    status:automatic.statusText},
-  autoSaved,existingWetLayers:Object.keys(automatic.wetHash).length,
+  autoSaved,autoBytesMatch,storedRecord:{updated:autoRecord.updated,paintMatches:autoRecord.paintMatches,referenceMatches:autoRecord.referenceMatches,wetLayersExactHash:autoRecord.wetLayersExactHash,wetLayerCount:autoRecord.wetLayerCount},existingWetLayers:Object.keys(automatic.wetHash).length,
   simulatedPenOnly:true,ownerDevicePass:false
  }));
  assert.equal(automatic.wet.phase,'FIX','Auto lifecycle must finish');
@@ -78,6 +117,10 @@ let browser;
  // Explicit flush is *diagnostic only*, never replace an automatic PASS claim.
  const manualOk=await page.evaluate(async()=>await window.__ZGEN_ART_RECOVERY.flush());
  const afterManual=await state();
+ const manualRecord=await persisted();
+ assert.equal(manualRecord.exists,true,'Explicit checkpoint persisted');
+ assert.equal(manualRecord.wetLayersExactHash,true,'Explicit checkpoint wet layers match');
+ assert.equal(manualRecord.referenceMatches,true,'Explicit checkpoint reference matches');
  console.log('ZGEN_JOB_M_EXPLICIT_POSTFIX_FLUSH_DIAGNOSTIC',JSON.stringify({
   manualOk,savedAt:afterManual.recovery.savedAt,lastError:afterManual.recovery.lastError,
   automaticCheckpointObserved:autoSaved}));
@@ -102,12 +145,15 @@ let browser;
   paintLayerPreserved:true,noBrowserErrors:true,
   autoSaveWithoutManualAction:autoSaved,physicalDevicePass:false,
   noRealOwnerFilesTouched:true}));
- if(!autoSaved){
-  console.error('ZGEN_JOB_M_AUTOMATIC_POSTFIX_RECOVERY_FAIL',JSON.stringify({
-   reason:'No automatic checkpoint after completed FIX within controlled observation',
+ if(!autoBytesMatch){
+  console.error('ZGEN_JOB_M_AUTOMATIC_POSTFIX_RECOVERY_BYTES_FAIL',JSON.stringify({
+   autoSaved,autoBytesMatch,storedRecord:autoRecord,
+   reason:'Automatic checkpoint cannot be certified exact to post-FIX wet/reference/paint state',
    manualFlushWorks:true,reopenFromExplicitCheckpointWorks:true}));
   process.exitCode=1;
- }else console.log('ZGEN_JOB_M_AUTOMATIC_POSTFIX_RECOVERY_PASS');
+ }else console.log('ZGEN_JOB_M_AUTOMATIC_POSTFIX_RECOVERY_EXACT_STATE_PASS',JSON.stringify({
+   autoSaved,autoBytesMatch,lastError:automatic.recovery.lastError,
+   statusText:automatic.statusText}));
  await context.close();
 })().catch(e=>{console.error('ZGEN_JOB_M_RECOVERY_DIAGNOSTIC_ERROR',e);process.exitCode=1;})
 .finally(async()=>{if(browser)await browser.close()});
