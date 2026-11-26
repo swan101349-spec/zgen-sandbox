@@ -33,6 +33,7 @@ jobs:
             studio-recovery-20261124/bounded-fill.js \
             shell-v2.html three-shell.js original-engine.html
           node --check tests/job-j-graphite-touch-reachability.cjs
+          node --check tests/job-j-ink-lazy-pixel.cjs
       - name: Install Playwright Chromium for isolated disposable browser
         run: |
           npm install --no-save --no-package-lock playwright@1.56.0
@@ -48,3 +49,4 @@ jobs:
             curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
           done
           node tests/job-j-graphite-touch-reachability.cjs
+          node tests/job-j-ink-lazy-pixel.cjs
