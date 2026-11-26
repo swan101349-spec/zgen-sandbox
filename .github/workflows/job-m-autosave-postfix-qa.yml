@@ -1,0 +1,56 @@
+name: JOB-M C2 | post-FIX exact wet recovery repair QA (release held)
+on:
+  push:
+    branches: [repair/job-m-autosave-postfix-20261126]
+permissions:
+  contents: read
+jobs:
+  c2-recovery-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Protect exact source scope and valid recovery script
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only 8f503643b2ec3fe61b794c9305564d53e2ee0bb1 HEAD >/tmp/job-m-changed
+          python3 - <<'PY'
+          from pathlib import Path
+          changed=set(Path('/tmp/job-m-changed').read_text().splitlines())
+          expected={
+            'tests/job-m-wet-recovery-diagnostic.cjs',
+            '.github/workflows/job-m-wet-recovery-diagnostic.yml',
+            '.github/workflows/job-m-autosave-postfix-qa.yml',
+            'studio-recovery-20261124/artwork-survival.js'
+          }
+          assert changed==expected,(changed,expected)
+          print('ZGEN_JOB_M_REPAIR_SOURCE_SCOPE_PASS',sorted(changed))
+          PY
+          git diff --quiet 8f503643b2ec3fe61b794c9305564d53e2ee0bb1 HEAD -- studio-recovery-20261124/index.html
+          git diff --quiet 8f503643b2ec3fe61b794c9305564d53e2ee0bb1 HEAD -- studio-recovery-20261124/three-shell.js
+          node --check studio-recovery-20261124/artwork-survival.js
+          node --check tests/job-m-wet-recovery-diagnostic.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Native wet FIX automatic IndexedDB exact-state and safe reload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/job-m-repair-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-m-wet-recovery-diagnostic.cjs
