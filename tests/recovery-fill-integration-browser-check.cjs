@@ -80,13 +80,13 @@ function capture(){
    x:bounds.x+bounds.width*.7,y:bounds.y+bounds.height*.25,button:'left',buttons:0,force:0});
   await cdp.detach();
   await page.waitForFunction(()=>window.__C4History().undo.length===1,null,{timeout:10000});
-  await page.evaluate(()=>document.querySelector('[data-act="stop"]').click());
+  await page.locator('.actions [data-act="stop"]').click();
   // Only the outline is a deterministic fixture, not an artwork import claim.
   await page.evaluate(()=>{
    const c=document.querySelector('#reference').getContext('2d');
    c.strokeStyle='rgba(53,57,62,1)';c.lineWidth=5;c.strokeRect(240,470,240,340);
   });
-  const before=await page.evaluate(capture);
+  let before=await page.evaluate(capture);
   assert.ok(Object.values(before.wet).some(x=>x.nonzero>0),'Native C4 wet baseline must exist');
   await openFill();
   await adjust.tap();
@@ -98,22 +98,70 @@ function capture(){
   await slider('strength').focus();await slider('strength').press('Home');
   await adjust.tap();
   await tapPaper();
+  const stopped=await page.evaluate(capture);
+  const stopDiagnostics=await page.evaluate(()=>({
+    status:document.querySelector('#status')?.textContent,
+    fillActive:window.__ZGEN_FILL?.active,
+    fillSettings:window.__ZGEN_BRUSH_CONTROLS?.fillSettings,
+    painterStopped:window.__ZGEN_BETA_26?.state()?.stopped,
+    wetDirty:window.__C4?.getState()?.dirty
+  }));
+  console.log('ZGEN_FILL_STOP_REFUSAL_DIAGNOSTIC '+JSON.stringify({
+    viewport,center:stopped.center,historyBefore:before.history.undo.length,
+    historyAfter:stopped.history.undo.length,...stopDiagnostics
+  }));
+  assert.equal(stopDiagnostics.painterStopped,true,'Native STOP is engaged');
+  assert.equal(stopDiagnostics.fillActive,true,'User activated real Fill control');
+  assert.match(stopDiagnostics.status,/Painting is STOPPED; press GO/i);
+  assert.equal(stopped.paint,before.paint,'STOP refuses Fill without altering canvas');
+  assert.deepEqual(stopped.history,before.history,'STOP refusal adds no native history');
+  await page.locator('.actions [data-act="go"]').click();
+  await tapPaper();
+  const wetBlocked=await page.evaluate(capture);
+  const wetStatus=await page.locator('#status').textContent();
+  assert.match(wetStatus,/Dry Wash before Fill/i,'GO retains wet-safety refusal');
+  assert.equal(wetBlocked.paint,before.paint,'Wet C4 safety gate changes no paint pixels');
+  assert.deepEqual(wetBlocked.history,before.history,'Wet refusal adds no native history');
+  assert.ok(Object.values(wetBlocked.wet).some(x=>x.nonzero>0),
+    'Native C4 wet evidence remains present after both safety refusals');
+  console.log('ZGEN_RECOVERY_FILL_STOP_AND_WET_REFUSAL_PASS '+JSON.stringify({
+    viewport,stopRefused:true,wetRefused:true,noHistoryMutation:true,
+    noPainterSourceModification:true,mixedFillAccepted:false
+  }));
+
+  // Separate disposable browser page: positive Fill contract on CLEAN C4 state.
+  // Never remove STOP or wet-dirty guards to manufacture a mixed wet PASS.
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>window.__ZGEN_FILL?.identifyRegion&&window.__ZGEN_FILL_BRIDGE&&
+    window.__C4?.snapshot&&window.__C4History&&window.__ZGEN_ART_RECOVERY?.status().ready&&
+    !window.__ZGEN_ART_RECOVERY.status().blocked,null,{timeout:45000});
+  await page.evaluate(()=>{
+    const ctx=document.querySelector('#reference').getContext('2d');
+    ctx.strokeStyle='rgba(53,57,62,1)';ctx.lineWidth=5;
+    ctx.strokeRect(240,470,240,340);
+  });
+  before=await page.evaluate(capture);
+  assert.equal(before.history.undo.length,0,'Fresh isolated positive test has no wet history');
+  await openFill();
+  await adjust.tap();
+  assert.deepEqual(await page.locator('#zshell-adjust-panel input[data-setting]').evaluateAll(
+    xs=>xs.map(x=>x.dataset.setting)),['coverage','soft','strength']);
+  await slider('coverage').focus();await slider('coverage').press('End');
+  await slider('strength').focus();await slider('strength').press('Home');
+  for(let n=0;n<20;n++) await slider('strength').press('ArrowRight');
+  assert.equal(await slider('strength').inputValue(),'20','Low-strength UI is 20%, not zero');
+  await adjust.tap();
+  await tapPaper();
   const low=await page.evaluate(capture);
-  const lowDiagnostics=await page.evaluate(()=>({
-   status:document.querySelector('#status')?.textContent,
-   fillActive:window.__ZGEN_FILL?.active,
-   fillSettings:window.__ZGEN_BRUSH_CONTROLS?.fillSettings,
-   brush:window.__ZGEN_BETA_26?.state()?.brush,
-   historyLength:window.__C4History?.().undo?.length
+  console.log('ZGEN_FILL_CLEAN_LOW_STRENGTH_DIAGNOSTIC '+JSON.stringify({
+    viewport,center:low.center,outside:low.outside,
+    historyBefore:before.history.undo.length,historyAfter:low.history.undo.length,
+    strength:20,status:await page.locator('#status').textContent()
   }));
-  console.log('ZGEN_FILL_LOW_STRENGTH_DIAGNOSTIC '+JSON.stringify({
-   viewport,center:low.center,outside:low.outside,
-   historyBefore:before.history.undo.length,historyAfter:low.history.undo.length,
-   ...lowDiagnostics
-  }));
-  assert.ok(low.center[3]>0&&low.center[3]<120,'Low strength makes translucent pigment');
+  assert.ok(low.center[3]>0&&low.center[3]<120,
+    'Native clean-region low-strength Fill makes translucent pigment');
   assert.equal(low.reference,before.reference,'Reference bytes unchanged');
-  assert.deepEqual(low.wet,before.wet,'Fill must preserve existing C4 GPU wet pigment');
+  assert.deepEqual(low.wet,before.wet,'Clean Fill does not create unintended wet state');
   assert.deepEqual(low.outside,before.outside,'No outside fill');
   assert.deepEqual(low.boundary,before.boundary,'Fill stays off outline wall');
   assert.equal(low.history.undo.length,before.history.undo.length+1,'One native Fill history step');
@@ -121,11 +169,11 @@ function capture(){
   await adjust.tap();await tapPaper();
   const high=await page.evaluate(capture);
   assert.ok(high.center[3]>low.center[3]+9,'Native strength slider changes actual wash alpha');
-  assert.deepEqual(high.wet,before.wet,'Stronger Fill preserves existing native wet state');
+  assert.deepEqual(high.wet,before.wet,'Stronger clean Fill does not modify C4 wet state');
   await page.locator('.zshell-history-left').tap();
   const undone=await page.evaluate(capture);
   assert.equal(undone.paint,low.paint,'Native Undo removes exactly stronger wash');
-  assert.deepEqual(undone.wet,before.wet,'Undo preserves wet pigment');
+  assert.deepEqual(undone.wet,before.wet,'Undo preserves clean C4 wet state');
   await page.locator('.zshell-history-right').tap();
   const redone=await page.evaluate(capture);
   assert.equal(redone.paint,high.paint,'Native Redo restores complete Fill bytes');
@@ -183,10 +231,10 @@ function capture(){
   assert.equal(await page.evaluate(()=>window.__ZGEN_FILL.active),false,'Normal brush exits Fill');
   assert.deepEqual((await page.evaluate(capture)).backing,[720,1280]);
   assert.deepEqual(errors,[],'No page errors');
-  console.log('ZGEN_RECOVERY_FILL_INTEGRATION_PASS '+JSON.stringify({
+  console.log('ZGEN_RECOVERY_FILL_CLEAN_REGION_PASS '+JSON.stringify({
    viewport,route:'studio-recovery-20261124/',closedTouch:true,blankTouchRefused:true,
    openTouchRefused:true,translucent:true,nativeStrengthChangesPixels:true,
-   coverageAndSoftMask:true,nativeUndoRedoExact:true,wetPigmentPreserved:true,
+   coverageAndSoftMask:true,nativeUndoRedoExact:true,wetRefusalPreservesWet:true,mixedC4WetFillAccepted:false,
    referencePreserved:true,explicitPNG:true,autoDownload:false,
    ownerDevicePass:false,liveDeployed:false,fillIsNativeC4WetSimulation:false}));
   await context.close();
