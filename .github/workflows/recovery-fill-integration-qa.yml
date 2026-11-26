@@ -1,0 +1,48 @@
+name: Recovery bounded Fill integration QA
+on:
+  push:
+    branches: [qa/recovery-fill-integration-20261126]
+permissions:
+  contents: read
+jobs:
+  recovery-fill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head and all painter/artwork source unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only 334bc3d9d952e2c30f677184d7a9243250a6f459 HEAD > /tmp/changed-paths
+          python3 - <<'PY'
+          from pathlib import Path
+          allowed = {"tests/recovery-fill-integration-browser-check.cjs", ".github/workflows/recovery-fill-integration-qa.yml"}
+          changed = set(Path("/tmp/changed-paths").read_text().splitlines())
+          assert changed == allowed, (changed, allowed)
+          print("ZGEN_FILL_QA_SOURCE_IMMUTABILITY_PASS", sorted(changed))
+          PY
+          node --check tests/recovery-fill-integration-browser-check.cjs
+      - name: Install existing pinned Chromium test dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Actual Recovery Fill touch, pixel, native history and wet preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-fill-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/recovery-fill-integration-browser-check.cjs
