@@ -224,6 +224,17 @@ function capture(){
   assert.notDeepEqual(exported.inside,exported.outside,'Export includes Fill pigment');
   assert.ok(exported.outline[0]<exported.outside[0]-30,'Export keeps graphite outline');
 
+  // Open-outline refusal needs a clean interior; prior high-strength deposits
+  // are native dark paint and legitimately form walls for the mask detector.
+  // Undo both disposable Fill patches through the actual native history UI.
+  await page.locator('.zshell-history-left').tap();
+  await page.locator('.zshell-history-left').tap();
+  const resetForOpen=await page.evaluate(capture);
+  assert.equal(resetForOpen.center[3],0,
+    'Open-outline fixture must not inherit earlier dark Fill interior');
+  console.log('ZGEN_FILL_OPEN_REFUSAL_FIXTURE_RESET '+JSON.stringify({
+    viewport,center:resetForOpen.center,history:resetForOpen.history
+  }));
   await page.evaluate(()=>{
    window.__ZGEN_THREE_SHELL.closeAll();
    const c=document.querySelector('#reference').getContext('2d');c.clearRect(477,570,9,130);
