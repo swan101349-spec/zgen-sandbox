@@ -1,0 +1,50 @@
+name: JOB-E C4 | five wet heads two numeric diameters, native pixels
+on:
+  push:
+    branches: [qa/job-e-wet-size-extremes-20261126]
+permissions:
+  contents: read
+jobs:
+  native-size-geometry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head and untouched C4 wet painter
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only dd36ce5d39e9c9950eeb17215c2bf27066e04e7f HEAD >/tmp/job-e-diameter-diff
+          python3 - <<'PY'
+          from pathlib import Path
+          changed=set(Path('/tmp/job-e-diameter-diff').read_text().splitlines())
+          expected={'tests/job-e-wet-diameter-extremes.cjs',
+                    '.github/workflows/job-e-wet-diameter-extremes.yml'}
+          assert changed==expected,(changed,expected)
+          print('ZGEN_JOB_E_SIZE_MATRIX_SOURCE_IMMUTABILITY_PASS',sorted(changed))
+          PY
+          git diff --quiet dd36ce5d39e9c9950eeb17215c2bf27066e04e7f HEAD -- studio-recovery-20261124/
+          node --check tests/job-e-wet-diameter-extremes.cjs
+      - name: Install isolated Chromium once
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: UI diameter 12 versus 75 native C4 pigmented brush coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/job-e-diameter-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-wet-diameter-extremes.cjs
