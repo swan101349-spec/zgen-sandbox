@@ -71,8 +71,19 @@ let browser;
   const dry=document.querySelector('#drawer [data-act="dry"]');
   if(!dry)throw Error('Native Dry Wash command missing');dry.click();
  });
- await page.waitForTimeout(2500);
- const afterDry=await snap();await touch();const afterAttempt=await snap();
+ // Do not classify a still-settling C4 wash as a completed Dry Wash defect.
+ const settleStarted=Date.now();let reachedFix=false,settleError=null;
+ try{
+  await page.waitForFunction(()=>window.__C4.getState().phase==='FIX',null,{timeout:45000});
+  reachedFix=true;
+ }catch(e){settleError=String(e?.name||e);}
+ const settleWaitMs=Date.now()-settleStarted;
+ const afterDry=await snap();
+ console.log('ZGEN_C3_DRY_PHASE_READBACK',JSON.stringify({
+  reachedFix,settleWaitMs,settleError,phase:afterDry.wet.phase,
+  dirty:afterDry.wet.dirty,wet:afterDry.wet.wet
+ }));
+ await touch();const afterAttempt=await snap();
  const accepted=afterAttempt.paint!==afterDry.paint&&
   afterAttempt.history.undo.length===afterDry.history.undo.length+1;
  const evidence={
@@ -80,12 +91,12 @@ let browser;
   afterDry:{dirty:afterDry.wet.dirty,phase:afterDry.wet.phase,status:afterDry.status},
   afterFill:{dirty:afterAttempt.wet.dirty,phase:afterAttempt.wet.phase,
    status:afterAttempt.status,history:afterAttempt.history,center:afterAttempt.center},
-  mixedWetThenDryThenFillAccepted:accepted,sourceModified:false,
+  mixedWetThenDryThenFillAccepted:accepted,reachedFix,settleWaitMs,settleError,sourceModified:false,
   ownerDevicePass:false,browserErrors:errors};
  console.log('ZGEN_C3_NATIVE_DRY_TRANSITION_DIAGNOSTIC',JSON.stringify(evidence));
  assert.deepEqual(errors,[]);
  if(!accepted){
-  console.error('ZGEN_C3_MIXED_DRY_FILL_BLOCKED_CONTRACT',JSON.stringify(evidence));
+  console.error(reachedFix?'ZGEN_C3_FILL_BLOCKED_AFTER_FIX':'ZGEN_C3_DRY_SETTLE_TIMEOUT_BLOCKED',JSON.stringify(evidence));
   process.exitCode=1;
  }else console.log('ZGEN_C3_MIXED_DRY_FILL_BROWSER_ACCEPTANCE_PASS',JSON.stringify(evidence));
  await ctx.close();
