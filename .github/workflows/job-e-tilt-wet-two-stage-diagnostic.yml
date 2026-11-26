@@ -1,0 +1,53 @@
+name: JOB-E C4 | two-stage wet Undo diagnostic, NOT product acceptance
+on:
+  push:
+    branches: [qa/job-e-tilt-wet-undo-two-stage-diagnostic-20261126]
+permissions:
+  contents: read
+jobs:
+  one-tilted-stroke-two-undos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head and previous failed history test unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only 0971f2dc63a9ca67a4e36fcfd85642415ab16df4 HEAD >/tmp/zgen-undo-diagnostic-files
+          python3 - <<'PY'
+          from pathlib import Path
+          actual=set(Path('/tmp/zgen-undo-diagnostic-files').read_text().splitlines())
+          expected={
+            'tests/job-e-tilt-wet-undo-two-stage-diagnostic.cjs',
+            '.github/workflows/job-e-tilt-wet-two-stage-diagnostic.yml'
+          }
+          assert actual==expected,(actual,expected)
+          print('ZGEN_JOB_E_TILTED_WET_HISTORY_DIAGNOSTIC_IMMUTABILITY_PASS',sorted(actual))
+          PY
+          git diff --quiet 0971f2dc63a9ca67a4e36fcfd85642415ab16df4 HEAD -- studio-recovery-20261124/
+          node --check tests/job-e-tilt-wet-undo-two-stage-diagnostic.cjs
+          node tests/job-e-c4-tilt-source-contract.cjs
+      - name: Install isolated browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Inspect actual native two-step history and first-second Undo gestures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-wet-undo-diagnosis-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-tilt-wet-undo-two-stage-diagnostic.cjs
