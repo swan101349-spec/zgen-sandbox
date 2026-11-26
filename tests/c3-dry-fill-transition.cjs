@@ -40,6 +40,18 @@ let browser;
   paint:document.querySelector('#paint').toDataURL(),
   history:window.__C4History(),
   wet:window.__C4.getState(),
+  wetLayers:(()=>{
+   const layers=window.__C4.snapshot()?.document?.whole?.layers||{},out={};
+   for(const [name,array] of Object.entries(layers)){
+    let hash=2166136261,nonzero=0;
+    for(let i=0;i<array.length;i++){
+     hash=Math.imul(hash^array[i],16777619);
+     if(array[i])nonzero++;
+    }
+    out[name]={hash:hash>>>0,nonzero,length:array.length};
+   }
+   return out;
+  })(),
   painter:window.__ZGEN_BETA_26.state(),
   status:document.querySelector('#status')?.textContent,
   center:[...document.querySelector('#paint').getContext('2d').getImageData(360,640,1,1).data]
@@ -79,6 +91,9 @@ let browser;
  }catch(e){settleError=String(e?.name||e);}
  const settleWaitMs=Date.now()-settleStarted;
  const afterDry=await snap();
+ assert.equal(reachedFix,true,'C4 must reach FIX before Fill positive acceptance');
+ assert.equal(afterDry.wet.wet.active,false,'No active wet engine during repaired Fill');
+ assert.equal(afterDry.wet.wet.fixing,false,'No ongoing fix during repaired Fill');
  console.log('ZGEN_C3_DRY_PHASE_READBACK',JSON.stringify({
   reachedFix,settleWaitMs,settleError,phase:afterDry.wet.phase,
   dirty:afterDry.wet.dirty,wet:afterDry.wet.wet
@@ -86,6 +101,21 @@ let browser;
  await touch();const afterAttempt=await snap();
  const accepted=afterAttempt.paint!==afterDry.paint&&
   afterAttempt.history.undo.length===afterDry.history.undo.length+1;
+ if(accepted){
+  assert.deepEqual(afterAttempt.wetLayers,afterDry.wetLayers,
+   'Repaired Fill must never mutate native C4 wet pigment arrays');
+  await page.locator('.zshell-history-left').tap();
+  const undone=await snap();
+  assert.equal(undone.paint,afterDry.paint,'Undo must remove exactly Fill deposit');
+  assert.deepEqual(undone.wetLayers,afterDry.wetLayers,'Undo preserves fixed C4 wet arrays');
+  await page.locator('.zshell-history-right').tap();
+  const redone=await snap();
+  assert.equal(redone.paint,afterAttempt.paint,'Redo restores exactly Fill deposit');
+  assert.deepEqual(redone.wetLayers,afterDry.wetLayers,'Redo preserves native fixed wet arrays');
+  console.log('ZGEN_C3_POSTFIX_FILL_HISTORY_AND_WET_PRESERVATION_PASS',
+   JSON.stringify({historyBefore:afterDry.history,historyAfter:afterAttempt.history,
+    wetLayerCount:Object.keys(afterDry.wetLayers).length}));
+ }
  const evidence={
   before:{dirty:before.wet.dirty,phase:before.wet.phase,history:before.history},
   afterDry:{dirty:afterDry.wet.dirty,phase:afterDry.wet.phase,status:afterDry.status},
