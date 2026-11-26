@@ -1,0 +1,64 @@
+name: JOB-E C4 | guarded native script pen tilt repair QA, no release
+on:
+  push:
+    branches: [repair/job-e-c4-stylus-tilt-forwarding-20261126]
+permissions:
+  contents: read
+jobs:
+  native-tilt-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact source SHA and 4-file bounded correction only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only aa28f789a003ff4043932dfcf9a0262c1039f228 HEAD >/tmp/job-e-c4-tilt-repair-files
+          python3 - <<'PY'
+          from pathlib import Path
+          names=set(Path('/tmp/job-e-c4-tilt-repair-files').read_text().splitlines())
+          expected={
+            'studio-recovery-20261124/index.html',
+            'tests/job-e-wet-tilt-forwarded-repair.cjs',
+            'tests/job-e-c4-tilt-source-contract.cjs',
+            '.github/workflows/job-e-c4-tilt-repair.yml'
+          }
+          assert names==expected,(names,expected)
+          print('ZGEN_JOB_E_TILT_REPAIR_SOURCE_SCOPE_PASS',sorted(names))
+          PY
+          node --check tests/job-e-wet-tilt-forwarded-repair.cjs
+          node --check tests/job-e-c4-tilt-source-contract.cjs
+          node tests/job-e-c4-tilt-source-contract.cjs
+          node - <<'JS'
+          const fs=require('node:fs'),vm=require('node:vm');
+          const html=fs.readFileSync('studio-recovery-20261124/index.html','utf8');
+          const m=html.match(/atob\('([A-Za-z0-9+/=]+)'\)/);
+          if(!m)throw Error('Packed painter JS absent');
+          new vm.Script(Buffer.from(m[1],'base64').toString('latin1'),
+            {filename:'source-pinned-native-c4-tilt-repair.js'});
+          console.log('ZGEN_JOB_E_NATIVE_TILT_REPAIRED_PACKED_JS_SYNTAX_PASS');
+          JS
+      - name: Install disposable Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: True DOM tilt 60/0, 0/60 and neutral into native wet C4 queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-tilt-positive-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-wet-tilt-forwarded-repair.cjs
