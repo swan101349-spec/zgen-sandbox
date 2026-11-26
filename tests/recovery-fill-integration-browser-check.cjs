@@ -80,7 +80,7 @@ function capture(){
    x:bounds.x+bounds.width*.7,y:bounds.y+bounds.height*.25,button:'left',buttons:0,force:0});
   await cdp.detach();
   await page.waitForFunction(()=>window.__C4History().undo.length===1,null,{timeout:10000});
-  await page.locator('.actions [data-act="stop"]').click();
+  await page.evaluate(()=>document.querySelector('[data-act="stop"]').click()); // hidden legacy header: native handler, not touch claim
   // Only the outline is a deterministic fixture, not an artwork import claim.
   await page.evaluate(()=>{
    const c=document.querySelector('#reference').getContext('2d');
@@ -115,7 +115,7 @@ function capture(){
   assert.match(stopDiagnostics.status,/Painting is STOPPED; press GO/i);
   assert.equal(stopped.paint,before.paint,'STOP refuses Fill without altering canvas');
   assert.deepEqual(stopped.history,before.history,'STOP refusal adds no native history');
-  await page.locator('.actions [data-act="go"]').click();
+  await page.evaluate(()=>document.querySelector('[data-act="go"]').click()); // hidden legacy header: native handler, not touch claim
   await tapPaper();
   const wetBlocked=await page.evaluate(capture);
   const wetStatus=await page.locator('#status').textContent();
