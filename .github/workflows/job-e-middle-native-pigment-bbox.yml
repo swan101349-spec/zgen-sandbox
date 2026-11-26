@@ -1,0 +1,57 @@
+name: JOB-E C4 | actual pigmented pixel middle diameter matrix
+on:
+  push:
+    branches: [qa/job-e-middle-pigmented-bbox-20261126]
+permissions:
+  contents: read
+jobs:
+  per-head-pigment-footprint:
+    strategy:
+      fail-fast: false
+      matrix:
+        head: [round, mop, flat, rigger, sponge]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    name: Real pigmented C4 footprint ${{ matrix.head }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head, original failed size test preserved, no product edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only b86dac3c23a36eee9df2bea60c85b0baf70e9b0b HEAD >/tmp/zgen-job-e-pigment-bbox
+          python3 - <<'PY'
+          from pathlib import Path
+          changed=set(Path('/tmp/zgen-job-e-pigment-bbox').read_text().splitlines())
+          expected={'tests/job-e-middle-native-pigment-bbox.cjs',
+                    '.github/workflows/job-e-middle-native-pigment-bbox.yml'}
+          assert changed==expected,(changed,expected)
+          print('ZGEN_JOB_E_PIGMENT_BBOX_QA_SOURCE_IMMUTABILITY_PASS',sorted(changed))
+          PY
+          git diff --quiet b86dac3c23a36eee9df2bea60c85b0baf70e9b0b HEAD -- studio-recovery-20261124/
+          node --check tests/job-e-middle-native-pigment-bbox.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Actual pigmented pixel footprint at UI diameters 25 45 60
+        shell: bash
+        env:
+          ZGEN_BRUSH: ${{ matrix.head }}
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-e-pigment-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-middle-native-pigment-bbox.cjs
