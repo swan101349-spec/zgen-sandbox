@@ -1,0 +1,52 @@
+name: JOB-J existing graphite | real touch reachability QA
+on:
+  push:
+    branches: [qa/job-j-graphite-touch-reachability-20261126]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  genuine-touch-reachability:
+    name: JOB-J C4 | 360/390/800px graphite reachability
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Protect all original painter and artwork bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          git diff --exit-code 4fc2b41bbce64f874b9f061dea122c5afb251030 HEAD -- \
+            studio-recovery-20261124/three-shell.js \
+            studio-recovery-20261124/three-shell.css \
+            studio-recovery-20261124/index.html \
+            studio-recovery-20261124/artwork-survival.js \
+            studio-recovery-20261124/bounded-fill.js \
+            shell-v2.html three-shell.js original-engine.html
+          node --check tests/job-j-graphite-touch-reachability.cjs
+          node --check tests/job-j-ink-lazy-pixel.cjs
+      - name: Install Playwright Chromium for isolated disposable browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Test finger-reachable closed-rail 2B path at three viewports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-job-j.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-j-graphite-touch-reachability.cjs
+          node tests/job-j-ink-lazy-pixel.cjs
