@@ -51,7 +51,12 @@ let browser;
  await page.evaluate(()=>document.querySelector('.actions [data-act="go"]').click());
  await touch();const wetBlocked=await snap();
  assert.match(wetBlocked.status,/Dry Wash before Fill/i);
- assert.equal(wetBlocked.paint,before.paint);assert.deepEqual(wetBlocked.history,before.history);
+ assert.equal(wetBlocked.paint,before.paint,'wet guard changed no dry-paint pixels');
+ const postStop=wetBlocked.history.undo.slice(before.history.undo.length);
+ assert.ok(postStop.every(x=>x==='dry'),'Only native automatic Dry Wash history is permitted after GO');
+ assert.equal(wetBlocked.history.undo.filter(x=>x==='fill').length,0,'Wet guard must never insert a Fill step');
+ assert.deepEqual(wetBlocked.history.redo,before.history.redo,'Wet guard preserves redo');
+ console.log('ZGEN_C3_AUTODRY_HISTORY_ACCOUNTED',JSON.stringify({added:postStop,history:wetBlocked.history}));
  console.log('ZGEN_C3_NATIVE_STOP_WET_GATES_PASS',JSON.stringify({
   beforeHistory:before.history,stopStatus:stopped.status,wetStatus:wetBlocked.status,
   actualWetDirty:wetBlocked.wet.dirty}));
