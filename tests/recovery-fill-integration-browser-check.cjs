@@ -99,6 +99,18 @@ function capture(){
   await adjust.tap();
   await tapPaper();
   const low=await page.evaluate(capture);
+  const lowDiagnostics=await page.evaluate(()=>({
+   status:document.querySelector('#status')?.textContent,
+   fillActive:window.__ZGEN_FILL?.active,
+   fillSettings:window.__ZGEN_BRUSH_CONTROLS?.fillSettings,
+   brush:window.__ZGEN_BETA_26?.state()?.brush,
+   historyLength:window.__C4History?.().undo?.length
+  }));
+  console.log('ZGEN_FILL_LOW_STRENGTH_DIAGNOSTIC '+JSON.stringify({
+   viewport,center:low.center,outside:low.outside,
+   historyBefore:before.history.undo.length,historyAfter:low.history.undo.length,
+   ...lowDiagnostics
+  }));
   assert.ok(low.center[3]>0&&low.center[3]<120,'Low strength makes translucent pigment');
   assert.equal(low.reference,before.reference,'Reference bytes unchanged');
   assert.deepEqual(low.wet,before.wet,'Fill must preserve existing C4 GPU wet pigment');
