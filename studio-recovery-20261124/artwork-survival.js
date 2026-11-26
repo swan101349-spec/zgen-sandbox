@@ -7,7 +7,7 @@
   'use strict';
   const DB = 'ZGenArtStudio-ThreeShell-Recovery', STORE = 'artwork', KEY = 'current-v1';
   let dbTask, ready = false, blocked = false, savedAt = null, lastError = null;
-  let timer = null, writing = null, repeat = false;
+  let timer = null, writing = null, repeat = false, deferredWetRetries = 0;
   const byId = id => document.getElementById(id);
   const message = text => { const el = byId('status'); if (el) el.textContent = text; };
   function engine() {
@@ -63,7 +63,9 @@
   }
   function capture() {
     const {paint, reference, wet} = engine();
-    if (wet.active || wet.engine?.hostWetState?.fixing)
+    const lifecycle = wet.getState?.();
+    if (wet.active || wet.engine?.hostWetState?.active || wet.engine?.hostWetState?.fixing ||
+        (lifecycle?.dirty && lifecycle.phase !== 'FIX'))
       throw Error('Current wet stroke is active; retry after it settles.');
     return {
       id:KEY, format:'ZGenArtStudio-ThreeShell-Recovery', version:1,
@@ -81,10 +83,21 @@
       const snap = capture();
       // Committed transaction replaces all layers together, never one by one.
       await record('readwrite', store => store.put(snap));
-      savedAt = snap.updated; lastError = null;
+      savedAt = snap.updated; lastError = null; deferredWetRetries = 0;
       return true;
     })().catch(e => {
-      lastError = String(e.message || e);
+      const reason = String(e.message || e);
+      if (reason === 'Current wet stroke is active; retry after it settles.') {
+        // Moving wet paint is not a storage failure. Never save a partial C4 state.
+        // Retry for a bounded period after pen-up, until native FIX is complete.
+        if (++deferredWetRetries <= 60) schedule(500);
+        else {
+          lastError = 'Wet painting did not reach a stable recovery state.';
+          message('Artwork recovery pending; keep this tab open. ' + lastError);
+        }
+        return false;
+      }
+      lastError = reason;
       message('Artwork recovery save failed; keep this tab open. ' + lastError);
       return false;
     }).finally(() => {
@@ -199,7 +212,7 @@
     }
   }
   window.__ZGEN_ART_RECOVERY = Object.freeze({
-    flush, status:()=>({ready,blocked,savedAt,lastError,writing:!!writing})
+    flush, status:()=>({ready,blocked,savedAt,lastError,writing:!!writing,pendingWetRetry:deferredWetRetries > 0})
   });
   start();
 })();
