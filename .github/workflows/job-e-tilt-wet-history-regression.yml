@@ -1,0 +1,51 @@
+name: JOB-E C4 | exact wet Undo Redo after repaired stylus tilt
+on:
+  push:
+    branches: [qa/job-e-tilt-wet-undo-redo-regression-20261126]
+permissions:
+  contents: read
+jobs:
+  tilted-wet-history:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact SHA and QA-only scope over protected C4 tilt repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only 946b742e38283e29db08d2d5d298ef11b524aa46 HEAD >/tmp/zgen-tilt-history-files
+          python3 - <<'PY'
+          from pathlib import Path
+          names=set(Path('/tmp/zgen-tilt-history-files').read_text().splitlines())
+          expected={'tests/job-e-tilt-native-wet-history-regression.cjs',
+                    '.github/workflows/job-e-tilt-wet-history-regression.yml'}
+          assert names==expected,(names,expected)
+          print('ZGEN_JOB_E_TILT_WET_HISTORY_QA_SCOPE_PASS',sorted(names))
+          PY
+          git diff --quiet 946b742e38283e29db08d2d5d298ef11b524aa46 HEAD -- studio-recovery-20261124/
+          node --check tests/job-e-tilt-native-wet-history-regression.cjs
+          node tests/job-e-c4-tilt-source-contract.cjs
+      - name: Prepare isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Actual pen tilt native wet GPU 5-array Undo Redo hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-tilt-wet-history-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-tilt-native-wet-history-regression.cjs
