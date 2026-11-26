@@ -1,0 +1,50 @@
+name: JOB-E C4 | 5 native wet heads + dry Clay Roller geometry
+on:
+  push:
+    branches: [qa/job-e-native-six-head-geometry-20261126]
+permissions:
+  contents: read
+jobs:
+  six-brush-sampled-geometry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head and no painter changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only dc1b6dd9d540f39f40a266db84e8525d12203c81 HEAD >/tmp/job-e-changes
+          python3 - <<'PY'
+          from pathlib import Path
+          changed=set(Path('/tmp/job-e-changes').read_text().splitlines())
+          expected={'tests/job-e-six-original-brush-heads.cjs',
+                    '.github/workflows/job-e-six-original-brush-heads.yml'}
+          assert changed==expected,(changed,expected)
+          print('ZGEN_JOB_E_SIX_HEAD_SOURCE_SCOPE_PASS',sorted(changed))
+          PY
+          git diff --quiet dc1b6dd9d540f39f40a266db84e8525d12203c81 HEAD -- studio-recovery-20261124/
+          node --check tests/job-e-six-original-brush-heads.cjs
+      - name: Install private runner Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Real C4 FIX pigment geometry and dry Clay Roller Undo/Redo
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/job-e-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/job-e-six-original-brush-heads.cjs
