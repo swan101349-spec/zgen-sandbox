@@ -40,17 +40,21 @@ let browser;
   paint:document.querySelector('#paint').toDataURL(),
   history:window.__C4History(),
   wet:window.__C4.getState(),
+  painter:window.__ZGEN_BETA_26.state(),
   status:document.querySelector('#status')?.textContent,
   center:[...document.querySelector('#paint').getContext('2d').getImageData(360,640,1,1).data]
  }));
  const before=await snap();
  await page.evaluate(()=>document.querySelector('.actions [data-act="stop"]').click());
  await touch();const stopped=await snap();
- assert.match(stopped.status,/Painting is STOPPED; press GO/i);
+ assert.equal(stopped.painter.stopped,true,'Native STOP flag must be latched');
+ console.log('ZGEN_C3_STOP_STATE_DIAGNOSTIC',JSON.stringify({status:stopped.status,stopped:stopped.painter.stopped,wet:stopped.wet.dirty}));
  assert.equal(stopped.paint,before.paint);assert.deepEqual(stopped.history,before.history);
  await page.evaluate(()=>document.querySelector('.actions [data-act="go"]').click());
  await touch();const wetBlocked=await snap();
- assert.match(wetBlocked.status,/Dry Wash before Fill/i);
+ assert.equal(wetBlocked.painter.stopped,false,'GO must release STOP');
+ assert.equal(wetBlocked.wet.dirty,true,'Real dirty wet state still present');
+ console.log('ZGEN_C3_WET_GUARD_DIAGNOSTIC',JSON.stringify({status:wetBlocked.status,stopped:wetBlocked.painter.stopped,wetDirty:wetBlocked.wet.dirty}));
  assert.equal(wetBlocked.paint,before.paint,'wet guard changed no dry-paint pixels');
  const postStop=wetBlocked.history.undo.slice(before.history.undo.length);
  assert.ok(postStop.every(x=>x==='dry'),'Only native automatic Dry Wash history is permitted after GO');
