@@ -1,0 +1,48 @@
+name: C3 separate dry-to-Fill functional gate (no release)
+on:
+  push:
+    branches: [qa/c3-dry-fill-transition-20261126]
+permissions:
+  contents: read
+jobs:
+  c3-dry-fill-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact head and QA-only scope relative to PR36
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          git diff --name-only a4a5afe86f2581d35ada5603af592f8be4a2463f HEAD >/tmp/c3-paths
+          python3 - <<'PY'
+          from pathlib import Path
+          files=set(Path('/tmp/c3-paths').read_text().splitlines())
+          expected={'.github/workflows/c3-dry-fill-transition-qa.yml','tests/c3-dry-fill-transition.cjs'}
+          assert files==expected,(files,expected)
+          print('ZGEN_C3_SCOPE_IMMUTABILITY_PASS',sorted(files))
+          PY
+          node --check tests/c3-dry-fill-transition.cjs
+      - name: Install isolated Chromium dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Native wet pen STOP GO Dry Wash Fill contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/zgen-c3-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/c3-dry-fill-transition.cjs
