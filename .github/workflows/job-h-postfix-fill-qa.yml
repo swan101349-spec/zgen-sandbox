@@ -1,0 +1,66 @@
+name: JOB-H C4 | FIX-phase bounded Fill repair QA (release held)
+on:
+  push:
+    branches: [repair/job-h-postfix-fill-bridge-20261126]
+permissions:
+  contents: read
+jobs:
+  postfix-fill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact checkout and one-token painter scope protected
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          python3 - <<'PY'
+          import base64,re,subprocess
+          from pathlib import Path
+          base='a4a5afe86f2581d35ada5603af592f8be4a2463f'
+          changes=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
+          expected={
+            '.github/workflows/c3-dry-fill-transition-qa.yml',
+            '.github/workflows/job-h-postfix-fill-qa.yml',
+            'tests/c3-dry-fill-transition.cjs',
+            'studio-recovery-20261124/index.html'
+          }
+          assert changes==expected,(changes,expected)
+          name='studio-recovery-20261124/index.html'
+          old=subprocess.check_output(['git','show',base+':'+name])
+          new=Path(name).read_bytes()
+          pattern=rb"atob\('([^']+)'\)"
+          oldmatch=re.search(pattern,old);newmatch=re.search(pattern,new)
+          assert oldmatch is not None and newmatch is not None
+          assert old.replace(oldmatch.group(1),newmatch.group(1),1)==new
+          oldjs=base64.b64decode(oldmatch.group(1));newjs=base64.b64decode(newmatch.group(1))
+          before=b'if(f.dirty)return{ok:false,reason:"Dry Wash before Fill to preserve wet painting."};'
+          after=b'if(f.dirty&&(f.phase!=="FIX"||f.active||f.engine.hostWetState.active||f.engine.hostWetState.fixing))return{ok:false,reason:"Dry Wash before Fill to preserve wet painting."};'
+          assert oldjs.count(before)==1
+          assert newjs==oldjs.replace(before,after,1)
+          print('ZGEN_JOB_H_ONE_GUARD_ONLY_SOURCE_IMMUTABILITY_PASS',sorted(changes))
+          PY
+          node --check tests/c3-dry-fill-transition.cjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Native C4 wet STOP GO Dry FIX Fill and Undo Redo preserve wet
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/job-h-postfix-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/studio-recovery-20261124/ >/dev/null && break || sleep 1
+          done
+          node tests/c3-dry-fill-transition.cjs
