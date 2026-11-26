@@ -13,11 +13,11 @@ let browser;
 function summarize(){
  const snapshot=window.__C4.snapshot();
  const whole=snapshot?.document?.whole;
- assert.ok(whole?.layers,'Native C4 whole wet-layer snapshot must exist');
+ if(!whole?.layers)throw Error('Native C4 whole wet-layer snapshot missing');
  const stats={},names=Object.keys(whole.layers).sort();
- assert.deepEqual(names,['fixedA','fixedB','inkA','inkB','wet']);
+ if(names.join(',')!=='fixedA,fixedB,inkA,inkB,wet')throw Error('Expected five C4 GPU layers');
  for(const [key,arr] of Object.entries(whole.layers)){
-  assert.ok(arr instanceof Uint16Array,'Actual C4 wet GPU layer must use half floats');
+  if(!(arr instanceof Uint16Array))throw Error('Expected C4 wet half-float GPU layer '+key);
   let nonzero=0,hash=2166136261;
   for(let i=0;i<arr.length;i++){
    const v=arr[i];
@@ -48,8 +48,7 @@ async function mark(brush,wet){
    window.__ZGEN_ART_RECOVERY?.status().ready&&!window.__ZGEN_ART_RECOVERY?.status().blocked,
    null,{timeout:45000});
   const starting=await page.evaluate(()=>({
-    png:document.querySelector('#paint').toDataURL('image/png'),
-    ink:window.__C4.snapshot()?.document?.whole?.layers
+    png:document.querySelector('#paint').toDataURL('image/png')
   }));
   await page.evaluate(()=>{
    const b=document.querySelector('button[data-act="brush"]');
