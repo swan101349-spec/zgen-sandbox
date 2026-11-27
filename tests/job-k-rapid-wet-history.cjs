@@ -104,6 +104,14 @@ async function probe(){
   assert.notDeepEqual(current.wet,states.at(-1).wet);
   states.push(current);
   }
+  // Use the artist's real STOP control before history inspection: restoring FLOW
+  // resumes live diffusion otherwise, making cross-task hashes time-dependent.
+  await page.evaluate(()=>{
+   const stop=document.querySelector('.actions [data-act="stop"]');
+   if(!stop)throw Error('Native STOP control missing');stop.click();
+  });
+  assert.equal(await page.evaluate(()=>window.__C4.getState().paused),true);
+  states[3]=await snap();
   // Intermediate wet states continue evolving; compare captured history states across
   // repeated restoration, rather than racing a pre-pointer snapshot against simulation.
   const restored=[];
@@ -127,7 +135,7 @@ async function probe(){
    }
   }
   assert.deepEqual(errors,[]);
-  console.log('ZGEN_JOB_K_THREE_RAPID_WET_STROKES_HISTORY_PASS',JSON.stringify({strokes:3,undo:6,redo:6,allFiveLayerHashesCompared:true,rapidOverlappingWetStrokesTested:true,physicalSPenPending:true}));
+  console.log('ZGEN_JOB_K_THREE_RAPID_WET_STROKES_HISTORY_PASS',JSON.stringify({strokes:3,undo:6,redo:6,allFiveLayerHashesCompared:true,rapidOverlappingWetStrokesTested:true,historyComparedUnderNativeStop:true,physicalSPenPending:true}));
  }finally{await context.close();}
 }
 (async()=>{browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});await probe();})().catch(e=>{console.error('ZGEN_JOB_K_MULTI_WET_HISTORY_FAIL',e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close()});
