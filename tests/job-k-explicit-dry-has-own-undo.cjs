@@ -98,12 +98,12 @@ async function probe(tiltX,tiltY){
    'Repaired C4 script must preserve real DOM tilt in ALL engine queue samples');
   assert.equal(w.phase,'FIX','Native wet paint stroke must finish');
   assert.deepEqual(errors,[],'No unrelated browser errors');
-  console.log('ZGEN_JOB_E_C4_TILT_QUEUE_FORWARDING_REPAIR_PASS',JSON.stringify({
+  console.log('ZGEN_JOB_K_EXPLICIT_DRY_TILT_QUEUE_PASS',JSON.stringify({
    injected:{tiltX,tiltY},domPenSamples:observed.length,
    c4ScriptSamples:w.witness.script.length,
    c4ScriptTiltEqualsDOM:true,nativeWetFix:true,
-   original26Job:'JOB-E/C4',
-   isolatedProductRepair:true,physicalSPenAccepted:false,releaseHeld:true
+   original26Job:'JOB-K/C1',
+   qaOnly:true,physicalSPenAccepted:false,releaseHeld:true
   }));
   const snap=()=>page.evaluate(()=>{
    const whole=window.__C4.snapshot().document.whole.layers,d={};
@@ -172,8 +172,8 @@ async function probe(tiltX,tiltY){
  await probe(60,0);
  console.log('ZGEN_JOB_K_EXPLICIT_DRY_NATIVE_HISTORY_PRESERVED_PASS',
   JSON.stringify({realDOMTiltObserved:true,nativeC4TiltForwarded:true,
-   normalNeutralPenUnchanged:true,original26Job:'JOB-E/C4',
+   neutralPenTested:false,original26Job:'JOB-K/C1',
    independentC3Pending:true,physicalTabS9SPenPending:true,
    livePagesUnchanged:true,releaseHeld:true}));
-})().catch(e=>{console.error('ZGEN_JOB_E_TILT_REPAIR_QA_FAIL',e);process.exitCode=1;})
+})().catch(e=>{console.error('ZGEN_JOB_K_EXPLICIT_DRY_QA_FAIL',e);process.exitCode=1;})
 .finally(async()=>{if(browser)await browser.close()});
