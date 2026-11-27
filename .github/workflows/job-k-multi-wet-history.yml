@@ -1,17 +1,19 @@
 name: JOB-K C1 | three sequential wet strokes Undo and Redo
 on:
-  push:
-    branches: [qa/job-k-multi-wet-history-20261127]
+  pull_request:
+    branches: [repair/job-k-auto-fix-single-undo-20261126]
+    types: [opened, synchronize, reopened]
 permissions:
   contents: read
 jobs:
   multi-wet-history:
+    if: github.event.pull_request.head.ref == 'qa/job-k-multi-wet-history-20261127'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -21,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           git diff --name-only 32014935f4175b7f0130ad17366a707083f0b581 HEAD >/tmp/zgen-manual-dry-diff
           python3 - <<'PY'
           from pathlib import Path
