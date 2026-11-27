@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic Paint QA | NOT ZGenArtStudio Pro</title>
+<style>
+  *{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#e6e8ec;color:#18212b;margin:0;padding:12px}
+  main{max-width:620px;margin:0 auto}h1{font-size:20px}p{font-size:13px;line-height:1.4}
+  .toolbar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}button{font-size:13px;padding:9px;border:1px solid #505d65;border-radius:6px;background:#fff;color:#10202b}
+  #paper{display:block;width:min(100%,420px);height:auto;aspect-ratio:9/16;border:2px solid #243341;background-color:white;touch-action:none}
+  #status{font-weight:600} .notice{background:#fff5d9;padding:9px;border-left:4px solid #825809}
+</style>
+</head>
+<body>
+<main>
+<h1>Manual-only synthetic canvas QA</h1>
+<p class="notice">PUBLIC-SAFE TEST ONLY. No private ZGen source, owner art, projects, or credentials. This is NOT the painting product.</p>
+<div class="toolbar">
+<button id="undo">Undo</button><button id="redo">Redo</button><button id="save">Save fake project</button>
+<button id="clear">Clear</button><button id="open">Open fake project</button><button id="export">Export PNG</button>
+</div>
+<p id="status" role="status">READY</p>
+<canvas id="paper" width="720" height="1280" aria-label="Synthetic portrait canvas"></canvas>
+</main>
+<script>
+'use strict';
+const canvas=document.querySelector('#paper'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+const status=document.querySelector('#status');
+const KEY='zgen-public-synthetic-test-only-v1';
+let history=[canvas.toDataURL('image/png')],position=0,drawing=false;
+function message(s){status.textContent=s;}
+function coords(e){const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};}
+function checkpoint(){history=history.slice(0,position+1);history.push(canvas.toDataURL('image/png'));position++;}
+function restore(data){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(im,0,0);resolve();};im.onerror=()=>reject(new Error('invalid image'));im.src=data;});}
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);drawing=true;const p=coords(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=20;ctx.strokeStyle='#222';ctx.lineTo(p.x+0.1,p.y+0.1);ctx.stroke();});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=coords(e);ctx.lineTo(p.x,p.y);ctx.stroke();});
+canvas.addEventListener('pointerup',()=>{if(drawing){drawing=false;checkpoint();message('STROKE');}});
+canvas.addEventListener('pointercancel',()=>{if(drawing){drawing=false;checkpoint();message('STROKE CANCELLED');}});
+document.querySelector('#undo').onclick=async()=>{if(position>0){await restore(history[--position]);message('UNDO');}};
+document.querySelector('#redo').onclick=async()=>{if(position<history.length-1){await restore(history[++position]);message('REDO');}};
+document.querySelector('#save').onclick=()=>{localStorage.setItem(KEY,canvas.toDataURL('image/png'));message('SAVED');};
+document.querySelector('#clear').onclick=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);checkpoint();message('CLEARED');};
+document.querySelector('#open').onclick=async()=>{const data=localStorage.getItem(KEY);if(!data){message('NO PROJECT');return;}try{await restore(data);checkpoint();message('OPENED');}catch(e){message('INVALID PROJECT');}};
+document.querySelector('#export').onclick=()=>{const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='synthetic-only-720x1280.png';a.click();message('EXPORTED');};
+async function validateStencilPng(blob){
+ if(!(blob instanceof Blob)||blob.type!=='image/png')return {ok:false,reason:'NOT_PNG'};
+ let bitmap;try{bitmap=await createImageBitmap(blob);}catch(e){return {ok:false,reason:'BAD_PNG'};}
+ try{
+   if(bitmap.width<540||bitmap.height<960||Math.abs(bitmap.width/bitmap.height-9/16)>0.015)return {ok:false,reason:'NOT_PORTRAIT'};
+   const c=document.createElement('canvas');c.width=bitmap.width;c.height=bitmap.height;
+   const k=c.getContext('2d',{willReadFrequently:true});k.drawImage(bitmap,0,0);
+   const d=k.getImageData(0,0,c.width,c.height).data;let hasTransparent=false,ink=0,wrongColor=false;
+   for(let i=0;i<d.length;i+=4){const a=d[i+3];if(a===0){hasTransparent=true;continue;}if(a>30){ink++;if(Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2])>12)wrongColor=true;}}
+   if(!hasTransparent)return {ok:false,reason:'OPAQUE'};
+   if(ink<20)return {ok:false,reason:'BLANK'};
+   if(wrongColor)return {ok:false,reason:'NOT_MONOCHROME'};
+   return {ok:true,width:bitmap.width,height:bitmap.height};
+ }finally{bitmap.close();}
+}
+window.SYNTH_QA={pixel:(x,y)=>Array.from(ctx.getImageData(x,y,1,1).data),validateStencilPng,history:()=>({position,length:history.length}),source:'public-synthetic-only'};
+</script>
+</body></html>
