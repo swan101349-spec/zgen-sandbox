@@ -1,0 +1,58 @@
+name: P0 artist PNG disappearance on existing beta
+
+on:
+  push:
+    branches: [qa/p0-artwork-vanish-repro-20261124]
+    paths: ['tests/p0-artwork-survival.cjs', '.github/workflows/p0-artwork-survival-qa.yml']
+  pull_request:
+    branches: [main]
+    paths: ['tests/p0-artwork-survival.cjs', '.github/workflows/p0-artwork-survival-qa.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  actual-beta-artwork-survival:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove exact HEAD, original art engine and test-only scope
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          test "$(git hash-object index.html)" = "8f5138325cb537a146cd2a5909e29126d624aaac"
+          test "$(git hash-object three-shell.js)" = "86aa1e80c10006d7ec96c2bdb8de357ddce1ea6e"
+          git diff --name-only main HEAD > /tmp/paths.txt || git diff --name-only origin/main HEAD > /tmp/paths.txt
+          if grep -Ev '^(tests/p0-artwork-survival.cjs|\.github/workflows/p0-artwork-survival-qa.yml)$' /tmp/paths.txt; then
+            echo "UNAUTHORIZED PRODUCT CHANGE"; exit 1
+          fi
+          node --check tests/p0-artwork-survival.cjs
+          echo "PASS unchanged public beta engine/shell, exact source SHA, test-only diff"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install temporary local QA runner
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Exercise actual imported PNG in the same public beta root
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory . > /tmp/zgen-p0.log 2>&1 &
+          for i in $(seq 1 25); do
+            curl -fsS http://127.0.0.1:8765/ >/dev/null && break || sleep 1
+          done
+          node tests/p0-artwork-survival.cjs
+      - name: Preserve browser failure or pass receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-imported-png-survival
+          path: three-shell-browser-qa/p0-artwork-survival.json
+          retention-days: 5
+          if-no-files-found: warn
